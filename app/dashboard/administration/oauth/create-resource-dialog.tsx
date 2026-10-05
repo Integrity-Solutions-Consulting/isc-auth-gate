@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { useCreateResourceMutation } from "./create-resource-mutation";
 import { resourcesKey } from "./list-resources-query";
 import { useSWRConfig } from "swr";
+import { ResourceScopesWarning } from "./resource-scopes-warning";
 import {
   resourceFormSchema,
   ResourceFormData,
@@ -137,9 +138,14 @@ export const CreateResourceDialog: FC<CreateResourceDialogProps> = ({
                         className="h-9"
                       />
                       <FieldDescription>
-                        Scopes custom de este resource. Los scopes OIDC
-                        (openid, profile, email) aplican a todos.
+                        Vacío = sin restricción. Si lo rellenas, los tokens
+                        sólo llevan estos scopes: incluye los OIDC (openid,
+                        profile, email…) si una app inicia sesión con él.
                       </FieldDescription>
+                      <ResourceScopesWarning
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                       {fieldState.error && (
                         <FieldError errors={[fieldState.error]} />
                       )}

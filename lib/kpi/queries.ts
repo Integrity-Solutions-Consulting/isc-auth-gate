@@ -1,4 +1,4 @@
-import { db } from "@/database";
+import { drizzlePostgreClient as db } from "@/database/clients/postgre";
 import {
   users,
   sessions,

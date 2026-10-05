@@ -6,7 +6,7 @@ import { members } from "@/database/schema";
 import { and, eq, inArray } from "drizzle-orm";
 // `db` (node-postgres), no el cliente Bun SQL: `next build` evalúa esto en
 // workers de Node, y aquel tiene una sola conexión (es para el entrypoint).
-import { db } from "@/database";
+import { drizzlePostgreClient } from "@/database/clients/postgre";
 
 export const BetterAuthOAuthProviderServerConfig = oauthProvider({
   loginPage: "/auth/sign-in",
@@ -14,7 +14,15 @@ export const BetterAuthOAuthProviderServerConfig = oauthProvider({
   allowDynamicClientRegistration:
     env.BETTER_AUTH_OAUTH_DYNAMIC_CLIENT_REGISTRATION,
   allowUnauthenticatedClientRegistration: false,
-  scopes: ["openid", "profile", "email", "offline_access"],
+  scopes: [
+    ...new Set([
+      "openid",
+      "profile",
+      "email",
+      "offline_access",
+      ...env.BETTER_AUTH_OAUTH_SCOPES,
+    ]),
+  ],
   cachedTrustedClients: new Set(env.BETTER_AUTH_OAUTH_TRUSTED_CLIENTS),
   resources: env.BETTER_AUTH_OAUTH_RESOURCES,
   clientReference: async ({ session }) => {
@@ -30,7 +38,7 @@ export const BetterAuthOAuthProviderServerConfig = oauthProvider({
     const activeOrg = sessionRecord?.activeOrganizationId;
     const userId = sessionRecord?.userId;
     if (!activeOrg || !userId) return false;
-    const [memberRow] = await db
+    const [memberRow] = await drizzlePostgreClient
       .select({ id: members.id })
       .from(members)
       .where(

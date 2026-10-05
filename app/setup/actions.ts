@@ -5,14 +5,9 @@ import { hashPassword } from "better-auth/crypto";
 import { createLocalAccountIssuer } from "@better-auth/core/db";
 import { eq, sql } from "drizzle-orm";
 
-import { db } from "@/database";
-import {
-  accounts,
-  members,
-  organizations,
-  users,
-} from "@/database/schema";
-import { needsSetup } from "@/lib/setup";
+import { accounts, members, organizations, users } from "@/database/schema";
+import { drizzlePostgreClient } from "@/database/clients/postgre";
+import { checkFirstAdmin } from "@/database/scripts/check-first-admin";
 
 // ponytail: setup es la única ruta que crea el primer admin sin SMTP ni
 // sesión — insertamos directo en DB (user/account/org/member). Esto evita:
@@ -59,7 +54,7 @@ export async function completeSetup(
 ): Promise<SetupResult> {
   // Gate rápido (fuera de la transacción) para no abrir una tx en peticiones
   // que ya no van a hacer nada.
-  if (!(await needsSetup())) {
+  if (!(await checkFirstAdmin())) {
     return { error: "El setup ya fue completado." };
   }
 
@@ -81,7 +76,7 @@ export async function completeSetup(
   const now = new Date();
 
   try {
-    await db.transaction(async (tx) => {
+    await drizzlePostgreClient.transaction(async (tx) => {
       // ponytail: lock global de setup. Es una fila de pg_locks, gratis, y
       // expulsa cualquier carrera entre réplicas sin tabla extra ni advisory
       // key por deploy. El número es arbitrario pero fijo.

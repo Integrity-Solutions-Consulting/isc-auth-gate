@@ -37,7 +37,7 @@ describe("Dynamic Access Control (organization roles)", () => {
     });
 
     const membersInDb = await testDb.query.members.findMany({
-      where: (members, { eq }) => eq(members.organizationId, org.id),
+      where: { organizationId: org.id },
     });
     expect(membersInDb).toHaveLength(1);
     expect(membersInDb[0].userId).toBe(user.id);
@@ -61,8 +61,7 @@ describe("Dynamic Access Control (organization roles)", () => {
     expect(result.roleData.role).toBe("editor");
 
     const rolesInDb = await testDb.query.organizationRoles.findMany({
-      where: (organizationRoles, { eq }) =>
-        eq(organizationRoles.organizationId, org.id),
+      where: { organizationId: org.id },
     });
 
     expect(rolesInDb).toHaveLength(1);
@@ -148,8 +147,7 @@ describe("Dynamic Access Control (organization roles)", () => {
     });
 
     const before = await testDb.query.organizationRoles.findMany({
-      where: (organizationRoles, { eq }) =>
-        eq(organizationRoles.organizationId, org.id),
+      where: { organizationId: org.id },
     });
     expect(before).toHaveLength(1);
 
@@ -162,8 +160,7 @@ describe("Dynamic Access Control (organization roles)", () => {
     });
 
     const after = await testDb.query.organizationRoles.findMany({
-      where: (organizationRoles, { eq }) =>
-        eq(organizationRoles.organizationId, org.id),
+      where: { organizationId: org.id },
     });
     expect(after).toHaveLength(0);
   });

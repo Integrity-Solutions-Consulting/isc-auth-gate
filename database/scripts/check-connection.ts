@@ -43,6 +43,6 @@ const postgrePing = async (): Promise<boolean> => {
 export const checkConnection = async () => {
   const result = await postgrePing();
   // Cierra el pool: con la conexión abierta el proceso no termina solo.
-  await drizzlePostgreClient.$client.close();
+  // await drizzlePostgreClient.$client.close();
   return result;
 };

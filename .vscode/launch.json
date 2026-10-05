@@ -2,19 +2,35 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "type": "node",
+      "request": "launch",
+      "name": "🚀 Debug Next.js with Bun",
+      "runtimeExecutable": "bun",
+      "program": "${workspaceFolder}/node_modules/.bin/next",
+      "args": [
+        "dev"
+      ],
+      "port": 9229,
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
       "type": "bun",
       "request": "attach",
       "name": "Next.js (Bun): attach",
-      "url": "ws://localhost:6499/",
-      "cwd": "${workspaceFolder}"
+      "url": "ws://localhost:6999/"
     },
     {
       "type": "bun",
       "request": "launch",
       "name": "Next.js (Bun): launch",
       "program": "${workspaceFolder}/node_modules/next/dist/bin/next",
-      "args": ["dev", "-p", "3000"],
-      "runtimeArgs": ["--inspect-wait"],
+      "args": [
+        "dev",
+        "-p",
+        "3000"
+      ],
       "cwd": "${workspaceFolder}",
       "stopOnEntry": false
     },

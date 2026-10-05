@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { betterAuthServer as auth } from "@/lib/auth/server";
 import { headers as NextHeaders } from "next/headers";
 import { redirect } from "next/navigation";
-import { needsSetup } from "@/lib/setup";
+import { checkFirstAdmin } from "@/database/scripts/check-first-admin";
 
 /**
  * Página principal de autenticación/login para el panel de control (Server Component).
@@ -16,7 +16,11 @@ import { needsSetup } from "@/lib/setup";
  */
 export default async function DashboardLoginPage() {
   // ponytail: primer arranque sin admin → /setup (única manera de entrar).
-  if (await needsSetup()) redirect("/setup");
+
+  const checkFirstAdminResult = await checkFirstAdmin();
+
+  // console.log("checkFirstAdminResult", checkFirstAdminResult);
+  if (!checkFirstAdminResult.isSuccess()) redirect("/setup");
 
   const headers = await NextHeaders();
 

@@ -1,30 +1,12 @@
 import { betterAuthServer as auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
+import { errorResponse, requireAdmin } from "../helpers";
 
-const authorize = async () => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    return { status: 401 as const, error: "Unauthorized" };
-  }
-  if (session.user.role !== "admin") {
-    return { status: 403 as const, error: "Forbidden" };
-  }
-  return { status: 200 as const, error: null };
-};
+type Params = { params: Promise<{ identifier: string }> };
 
-const errorStatus = (error: unknown) =>
-  typeof (error as { statusCode?: number }).statusCode === "number"
-    ? (error as { statusCode: number }).statusCode
-    : 400;
-
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ identifier: string }> },
-) {
-  const authz = await authorize();
-  if (authz.status !== 200) {
-    return Response.json({ error: authz.error }, { status: authz.status });
-  }
+export async function PATCH(request: Request, { params }: Params) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const { identifier } = await params;
   const body = await request.json().catch(() => null);
   if (!body) {
@@ -38,21 +20,13 @@ export async function PATCH(
     });
     return Response.json(updated);
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Failed to update resource" },
-      { status: errorStatus(error) },
-    );
+    return errorResponse(error, "Failed to update resource");
   }
 }
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ identifier: string }> },
-) {
-  const authz = await authorize();
-  if (authz.status !== 200) {
-    return Response.json({ error: authz.error }, { status: authz.status });
-  }
+export async function DELETE(_request: Request, { params }: Params) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const { identifier } = await params;
   try {
     const deleted = await auth.api.adminDeleteOAuthResource({
@@ -61,9 +35,6 @@ export async function DELETE(
     });
     return Response.json(deleted);
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Failed to delete resource" },
-      { status: errorStatus(error) },
-    );
+    return errorResponse(error, "Failed to delete resource");
   }
 }

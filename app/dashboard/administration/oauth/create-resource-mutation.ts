@@ -1,11 +1,12 @@
 import { OAuthResourceInput } from "@better-auth/oauth-provider";
 import { BetterFetchError } from "better-auth/client";
 import useSWRMutation from "swr/mutation";
+import { resourcesKey } from "./list-resources-query";
 
 const key = "POST /admin/resources";
 
 const fetcher = async (_key: string, { arg }: { arg: OAuthResourceInput }) => {
-  const res = await fetch("/admin/resources", {
+  const res = await fetch(resourcesKey, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(arg),

@@ -5,7 +5,7 @@ import { betterAuthServer as auth } from "@/lib/auth/server";
 import { headers as NextHeaders } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { needsSetup } from "@/lib/setup";
+// import { needsSetup } from "@/lib/setup";
 
 // ponytail: sin esto Next prerenderiza en build (○ en la tabla de rutas) y la
 // consulta de needsSetup() corre contra el placeholder de build.
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
   // ponytail: primer arranque sin admin → /setup.
-  if (await needsSetup()) redirect("/setup");
+  // if (await needsSetup()) redirect("/setup");
 
   let hasSession = false;
   try {

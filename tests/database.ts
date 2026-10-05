@@ -1,22 +1,23 @@
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { Database } from "bun:sqlite";
-import { pushSQLiteSchema } from "drizzle-kit/api";
+import { pushSchema } from "drizzle-kit/payload/sqlite";
 
 import * as schemaSqlite from "@/database/schema-sqlite";
+import { relations } from "@/database/relations-sqlite";
 
 /**
  * Test DB: SQLite en memoria (bun:sqlite nativo, sin infra).
  *
  * ponytail: reemplaza la conexión PG de `tests/database.ts` que apuntaba a la
  * misma DB que dev/prod — los tests creaban usuarios reales y cleanupTestDb()
- * podía truncarla. SQLite en memoria: aislado total, y `pushSQLiteSchema`
- * (drizzle-kit/api) crea las tablas desde schema-sqlite.ts sin DDL manual.
+ * podía truncarla. SQLite en memoria: aislado total, y `pushSchema`
+ * (drizzle-kit/payload/sqlite) crea las tablas desde schema-sqlite.ts sin DDL manual.
  */
 
 const sqlite = new Database(":memory:");
 sqlite.exec("PRAGMA foreign_keys = ON;");
 
-export const testDb = drizzle(sqlite, { schema: schemaSqlite });
+export const testDb = drizzle({ client: sqlite, relations });
 
 let initialized: Promise<void> | null = null;
 
@@ -25,11 +26,16 @@ export function ensureSchema(): Promise<void> {
   // veces en bun --watch fallaría por schema ya aplicado; al reiniciar el
   // proceso se re-crea todo (in-memory se pierde).
   initialized ??= (async () => {
-    const { apply } = await pushSQLiteSchema(
+    // ponytail: drizzle-kit 1.x ya no recibe una instancia drizzle sino un
+    // cliente mínimo { query, run, batch } — se arma sobre bun:sqlite.
+    const { apply } = await pushSchema(
       { ...schemaSqlite },
-      // ponytail: cast — LibSQLDatabase y BunSQLiteDatabase comparten dialecto
-      // (sync exec/run), solo difiere el tipo nominal.
-      testDb as unknown as Parameters<typeof pushSQLiteSchema>[1],
+      {
+        query: async (q, params = []) =>
+          sqlite.query(q).all(...params) as never,
+        run: async (q) => void sqlite.run(q),
+        batch: async (qs) => qs.forEach((q) => sqlite.run(q)),
+      },
     );
     await apply();
   })();

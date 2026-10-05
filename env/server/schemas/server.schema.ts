@@ -6,6 +6,10 @@ export const serverEnviroment = createEnv({
     // URL pública (con o sin "/" final). baseURL de Better Auth, links de
     // email y issuer OAuth. Ya existe en Dokploy y CI.
     BETTER_AUTH_URL: z.url(),
+    // Dominio de las cookies cross-subdominio (p. ej. el dominio padre en
+    // producción). Vacío en local: si no coincide con el host, el navegador
+    // descarta la cookie de sesión y el login vuelve a /dashboard/login.
+    BETTER_AUTH_SERVER_DOMAIN: z.string().min(1).optional(),
     BETTER_AUTH_SERVER_PATH: z.string().default("/api/auth"),
     BETTER_AUTH_SERVER_NAME: z.string().min(1),
     BETTER_AUTH_SERVER_HOST: z.string().default("localhost"),
