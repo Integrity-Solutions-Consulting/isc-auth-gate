@@ -15,6 +15,7 @@ import { BetterAuthNextCookiesServerConfig } from "./next";
 import { BetterAuthOauthDeviceAuthorizationServerConfig } from "./oauth-device-authorization";
 import { BetterAuthGenericOAuthServerConfig } from "./oauth-generic";
 import { BetterAuthOauthPopupServerConfig } from "./oauth-popup";
+import { BetterAuthOAuthErrorI18nServerConfig } from "./oauth-error-i18n";
 import { BetterAuthOAuthProviderServerConfig } from "./oauth-provider";
 import { BetterAuthOneTimeTokenServerConfig } from "./one-time-token";
 import { BetterAuthOpenApiServerConfig } from "./open-api";
@@ -41,6 +42,7 @@ export {
   BetterAuthOauthDeviceAuthorizationServerConfig,
   BetterAuthGenericOAuthServerConfig,
   BetterAuthOauthPopupServerConfig,
+  BetterAuthOAuthErrorI18nServerConfig,
   BetterAuthOAuthProviderServerConfig,
   BetterAuthOneTimeTokenServerConfig,
   BetterAuthOpenApiServerConfig,
@@ -92,6 +94,7 @@ export const BetterAuthServerPlugins = definePlugins([
   BetterAuthOauthPopupServerConfig,
   BetterAuthPasskeyServerConfig,
   BetterAuthI18nServerConfig,
+  BetterAuthOAuthErrorI18nServerConfig,
   BetterAuthNextCookiesServerConfig,
   ...BetterAuthTestUtilsServerConfig,
 ]);
