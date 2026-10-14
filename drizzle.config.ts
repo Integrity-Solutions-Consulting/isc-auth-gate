@@ -5,7 +5,7 @@ import { env } from "@/env/server";
 export default defineConfig({
   dialect: "postgresql",
   out: "./database/migrations",
-  schema: ["./database/schema.ts"],
+  schema: ["./database/schema.ts", "./database/schema-app.ts"],
   dbCredentials: {
     host: env.BETTER_AUTH_DATABASE_HOST,
     port: env.BETTER_AUTH_DATABASE_PORT,

@@ -20,6 +20,7 @@ const scopeDescriptions: Record<string, string> = {
   profile: "Leer la información de tu perfil",
   email: "Leer tu dirección de correo electrónico",
   offline_access: "Acceso en segundo plano (cuando no estás conectado)",
+  organization: "Tu rol y permisos en la organización elegida",
 };
 
 function ConsentContent() {
@@ -33,8 +34,8 @@ function ConsentContent() {
     policy_uri?: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [expired, setExpired] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const clientId = searchParams.get("client_id");
   const scopeParam = searchParams.get("scope");
@@ -87,12 +88,12 @@ function ConsentContent() {
         accept,
         oauth_query: oauthQuery,
       });
-      if (error) {
       if (isInvalidSignature(error)) {
         setExpired(true);
         setIsSubmitting(false);
         return;
       }
+      if (error) {
         setError(error.message ?? "No se pudo procesar la autorización.");
         setIsSubmitting(false);
         return;
@@ -249,7 +250,6 @@ function ConsentContent() {
                 </CardContent>
               )}
 
-              <CardFooter className="flex flex-col gap-2">
               {expired ? (
                 <CardFooter>
                   <div className="w-full">
@@ -257,6 +257,7 @@ function ConsentContent() {
                   </div>
                 </CardFooter>
               ) : (
+              <CardFooter className="flex flex-col gap-2">
                 {!error && (
                   <p className="mb-1 text-center text-xs text-muted-foreground">
                     Tu contraseña nunca se comparte con la aplicación.
@@ -300,6 +301,7 @@ function ConsentContent() {
                   </>
                 )}
               </CardFooter>
+              )}
             </Card>
           </div>
         </div>
@@ -307,7 +309,6 @@ function ConsentContent() {
     </div>
   );
 }
-              )}
 
 export default function ConsentPage() {
   return (

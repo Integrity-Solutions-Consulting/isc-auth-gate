@@ -1,6 +1,6 @@
 import { betterAuthServer as auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
-import { errorResponse, isUniqueViolation, requireAdmin } from "./helpers";
+import { errorResponse, isUniqueViolation, requireAdmin } from "../helpers";
 
 export async function GET() {
   const denied = await requireAdmin();

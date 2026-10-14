@@ -1,7 +1,7 @@
 import { betterAuthServer as auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
 
-// Compartido por las rutas /api/admin/resources/**. Los endpoints admin de
+// Compartido por las rutas /api/admin/**. Los endpoints admin de
 // resources del plugin son SERVER_ONLY (404 por HTTP); estas rutas los
 // exponen al dashboard sólo para admins.
 

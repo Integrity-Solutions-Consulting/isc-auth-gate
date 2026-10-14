@@ -1,6 +1,6 @@
 import { betterAuthServer as auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
-import { errorResponse, requireAdmin } from "../helpers";
+import { errorResponse, requireAdmin } from "../../helpers";
 
 type Params = { params: Promise<{ identifier: string }> };
 

@@ -3,6 +3,7 @@ import { Database } from "bun:sqlite";
 import { pushSchema } from "drizzle-kit/payload/sqlite";
 
 import * as schemaSqlite from "@/database/schema-sqlite";
+import * as schemaAppSqlite from "@/database/schema-app-sqlite";
 import { relations } from "@/database/relations-sqlite";
 
 /**
@@ -29,7 +30,7 @@ export function ensureSchema(): Promise<void> {
     // ponytail: drizzle-kit 1.x ya no recibe una instancia drizzle sino un
     // cliente mínimo { query, run, batch } — se arma sobre bun:sqlite.
     const { apply } = await pushSchema(
-      { ...schemaSqlite },
+      { ...schemaSqlite, ...schemaAppSqlite },
       {
         query: async (q, params = []) =>
           sqlite.query(q).all(...params) as never,

@@ -2,6 +2,7 @@ import type { BetterAuthPlugin } from "better-auth";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { env } from "@/env/server";
 import { members } from "@/database/schema";
+import { organizationClaims, organizationPostLogin } from "./oauth-organization";
 
 import { and, eq, inArray } from "drizzle-orm";
 // `db` (node-postgres), no el cliente Bun SQL: `next build` evalúa esto en
@@ -52,6 +53,10 @@ export const BetterAuthOAuthProviderServerConfig = oauthProvider({
     return Boolean(memberRow);
   },
   resourcePrivileges: async ({ user }) => user?.role === "admin",
+  // Roles/permisos por app desde la organización elegida al iniciar sesión
+  // (scope "organization"). Ver ./oauth-organization.ts.
+  postLogin: organizationPostLogin,
+  extensions: [organizationClaims],
   rateLimit: {
     token: { window: 60, max: 60 },
     authorize: { window: 60, max: 30 },

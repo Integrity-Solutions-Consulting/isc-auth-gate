@@ -1,6 +1,6 @@
 import { betterAuthServer as auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
-import { errorResponse, isUniqueViolation, requireAdmin } from "../../../helpers";
+import { errorResponse, isUniqueViolation, requireAdmin } from "../../../../helpers";
 
 // Con enforcePerClientResources (default true) un cliente sin este vínculo
 // no puede pedir tokens para el resource.
