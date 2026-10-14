@@ -1,5 +1,7 @@
 "use client";
 
+import { OAuthRequestExpired } from "@/components/oauth-request-expired";
+import { isInvalidSignature, oauthExpiredHref } from "@/lib/oauth-flow";
 import { authClient } from "@/lib/auth/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +34,7 @@ function ConsentContent() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expired, setExpired] = useState(false);
 
   const clientId = searchParams.get("client_id");
   const scopeParam = searchParams.get("scope");
@@ -85,6 +88,11 @@ function ConsentContent() {
         oauth_query: oauthQuery,
       });
       if (error) {
+      if (isInvalidSignature(error)) {
+        setExpired(true);
+        setIsSubmitting(false);
+        return;
+      }
         setError(error.message ?? "No se pudo procesar la autorización.");
         setIsSubmitting(false);
         return;
@@ -242,6 +250,13 @@ function ConsentContent() {
               )}
 
               <CardFooter className="flex flex-col gap-2">
+              {expired ? (
+                <CardFooter>
+                  <div className="w-full">
+                    <OAuthRequestExpired />
+                  </div>
+                </CardFooter>
+              ) : (
                 {!error && (
                   <p className="mb-1 text-center text-xs text-muted-foreground">
                     Tu contraseña nunca se comparte con la aplicación.
@@ -251,9 +266,11 @@ function ConsentContent() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => router.replace("/dashboard")}
+                    onClick={() =>
+                      window.location.assign(oauthExpiredHref(window.location.search))
+                    }
                   >
-                    Volver al inicio
+                    Volver a la aplicación
                   </Button>
                 ) : (
                   <>
@@ -290,6 +307,7 @@ function ConsentContent() {
     </div>
   );
 }
+              )}
 
 export default function ConsentPage() {
   return (

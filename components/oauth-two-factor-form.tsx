@@ -1,5 +1,6 @@
 "use client";
 
+import { isInvalidSignature, isOAuthFlow, oauthExpiredHref } from "@/lib/oauth-flow";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
@@ -37,15 +38,22 @@ export function OAuthTwoFactorForm() {
     setPending(true);
     try {
       const opts = { code, trustDevice } as const;
-      if (method === "totp") {
-        await authClient.twoFactor.verifyTotp(opts);
-      } else if (method === "otp") {
-        await authClient.twoFactor.verifyOtp(opts);
-      } else {
-        await authClient.twoFactor.verifyBackupCode(opts);
+      // authClient no lanza: devuelve { error }
+      const { error } =
+        method === "totp"
+          ? await authClient.twoFactor.verifyTotp(opts)
+          : method === "otp"
+            ? await authClient.twoFactor.verifyOtp(opts)
+            : await authClient.twoFactor.verifyBackupCode(opts);
+      if (isInvalidSignature(error)) {
+        window.location.assign(oauthExpiredHref(window.location.search));
+        return;
       }
+      if (error) throw new Error(error.message ?? "Código inválido o expirado");
       toast.success("Verificado");
-      router.push(redirectTo);
+      // En un flujo OAuth (query firmada) el servidor responde con la URL de
+      // vuelta a la app y el cliente de Better Auth ya navega a ella
+      if (!isOAuthFlow(window.location.search)) router.push(redirectTo);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Código inválido o expirado",

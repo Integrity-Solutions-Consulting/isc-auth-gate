@@ -22,6 +22,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { useSearchParams, useRouter } from "next/navigation";
 import { MicrosoftLoginButton } from "@/components/MicrosoftLoginButton";
+import { OAuthRequestExpired } from "@/components/oauth-request-expired";
+import { isInvalidSignature, isOAuthFlow } from "@/lib/oauth-flow";
 
 const signInFormSchema = z.object({
   username: z.email(),
@@ -30,7 +32,13 @@ const signInFormSchema = z.object({
   }),
 });
 
-export function LoginForm({ className }: React.ComponentProps<"form">) {
+export function LoginForm({
+  className,
+  expired: initiallyExpired = false,
+}: React.ComponentProps<"form"> & {
+  /** La query firmada del authorize ya caducó al cargar la página. */
+  expired?: boolean;
+}) {
   const id = useId();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -45,8 +53,11 @@ export function LoginForm({ className }: React.ComponentProps<"form">) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [expired, setExpired] = useState(initiallyExpired);
 
   const callbackURL = searchParams.get("redirectTo") || "/dashboard";
+  // En un flujo OAuth el servidor ignora callbackURL y devuelve a la app
+  const oauthFlow = isOAuthFlow(searchParams.toString());
 
   async function onSubmit(values: z.infer<typeof signInFormSchema>) {
     setIsSubmitting(true);
@@ -61,7 +72,8 @@ export function LoginForm({ className }: React.ComponentProps<"form">) {
         data?: { twoFactorRedirect?: boolean };
       }) => {
         if (context.data?.twoFactorRedirect) {
-          router.push("/auth/2fa");
+          // Conserva la query firmada: el 2FA también debe volver a la app
+          router.push(`/auth/2fa${window.location.search}`);
         }
       };
       const { error } = isEmail
@@ -73,7 +85,9 @@ export function LoginForm({ className }: React.ComponentProps<"form">) {
             { ...base, username: identifier },
             { onSuccess: onSuccess as never },
           );
-      if (error) {
+      if (isInvalidSignature(error)) {
+        setExpired(true);
+      } else if (error) {
         toast.error(error.message || "Error al iniciar sesión");
       }
     } catch {
@@ -97,6 +111,9 @@ export function LoginForm({ className }: React.ComponentProps<"form">) {
   return (
     <form
       id={`login-form-${id}`}
+      // Si se envía antes de que cargue el JS, POST evita que el navegador
+      // ponga usuario y contraseña en la URL (GET por defecto)
+      method="post"
       onSubmit={form.handleSubmit(onSubmit)}
       className={cn("flex flex-col gap-6", className)}
     >
@@ -117,6 +134,8 @@ export function LoginForm({ className }: React.ComponentProps<"form">) {
             Accede con tu cuenta institucional para continuar
           </p>
         </div>
+
+        {expired && <OAuthRequestExpired />}
 
         {authError && (
           <Alert variant="destructive" role="alert" aria-live="assertive">
@@ -228,23 +247,27 @@ export function LoginForm({ className }: React.ComponentProps<"form">) {
           )}
         />
 
-        <Button disabled={isSubmitting} type="submit" className="w-full">
+        <Button disabled={isSubmitting || expired} type="submit" className="w-full">
           {isSubmitting ? <Spinner /> : "Ingresar"}
         </Button>
 
         <div className="flex flex-col gap-2 text-center text-sm">
           <a
-            href="/auth/email-otp"
+            href={`/auth/email-otp${oauthFlow ? `?${searchParams.toString()}` : ""}`}
             className="text-muted-foreground underline-offset-4 hover:underline"
           >
             Acceder con código por correo (sin contraseña)
           </a>
-          <a
-            href="/auth/magic-link"
-            className="text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Acceder con enlace mágico por correo
-          </a>
+          {/* El enlace mágico se abre desde el correo (GET, sin oauth_query):
+              no puede volver a la app, así que no se ofrece en un flujo OAuth */}
+          {!oauthFlow && (
+            <a
+              href="/auth/magic-link"
+              className="text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Acceder con enlace mágico por correo
+            </a>
+          )}
           <p className="mt-2 text-xs text-muted-foreground">
             ¿Necesitas una cuenta? Solicítala a tu administrador.
           </p>
