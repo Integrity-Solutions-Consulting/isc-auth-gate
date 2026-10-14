@@ -91,8 +91,8 @@ Tests connect to the same database as dev (`tests/database.ts`). No isolated tes
 
 | Package | Version | Reason |
 |---------|---------|--------|
-| `better-auth` | `^1.6.11` | Base auth framework |
-| `@better-auth/oauth-provider` | `1.6.12` | Pinned — `1.6.20` imports `redirect-uri.mjs` not in core@1.6.11 |
+| `better-auth` | `1.7.1` | Pinned exactly; must match the oauth-provider version |
+| `@better-auth/oauth-provider` | `1.7.1` | Pinned exactly to the same version as `better-auth` |
 | `@react-email/ui` | `6.6.4` | Pre-installed with bun to bypass npm peer-dep conflict |
 | `next` | `16.2.4` | Next.js 16 with React 19 |
 
@@ -135,7 +135,7 @@ See [React Compiler rules](https://react.dev/learn/react-compiler#rules).
 bun run auth:generate
 ```
 
-This reads `lib/auth.ts`, detects all plugins (core, admin, organization, oauthProvider), and outputs Drizzle schema + relations. **Do not edit `database/schema.ts` manually** — any custom fields must be added via Better Auth plugin config or handled in a separate file.
+This should read the Better Auth server config (`lib/auth/server`), detect all plugins (core, admin, organization, oauthProvider), and output Drizzle schema + relations. Note: the `auth:generate` script in `package.json` still points to `./lib/auth.ts`, which no longer exists — fix the `--config` path before running it. **Do not edit `database/schema.ts` manually** — any custom fields must be added via Better Auth plugin config or handled in a separate file.
 
 After regeneration, push to DB:
 
@@ -147,16 +147,19 @@ bun run database:up       # apply migration
 
 ## Env vars
 
-All env vars validated by Zod in `env/`:
+All env vars validated by Zod (t3-env) in `env/`:
 
 | File | Scope |
 |------|-------|
-| `env/server.schema.ts` | Server config (name, host, port, secret, trusted origins) |
-| `env/database.schema.ts` | PostgreSQL connection |
-| `env/microsoft.schema.ts` | Microsoft Entra ID OAuth |
-| `env/smtp.schema.ts` | SMTP transport |
+| `env/server/schemas/server.schema.ts` | Server config (URL, base path, name, host, port, secret, domain, trusted origins, rate-limit storage) |
+| `env/server/schemas/database.schema.ts` | PostgreSQL connection |
+| `env/server/schemas/microsoft.schema.ts` | Microsoft Entra ID OAuth |
+| `env/server/schemas/smtp.schema.ts` | SMTP transport |
+| `env/server/schemas/captcha.schema.ts` | Captcha provider |
+| `env/server/schemas/oauth.schema.ts` | OAuth provider: scopes, resources seed, trusted clients, dynamic client registration ([oauth-provider.md](./oauth-provider.md)) |
+| `env/client/index.ts` | Browser `NEXT_PUBLIC_*` vars |
 
-Merged and parsed in `env/index.ts`. Access via `import { env } from "@/env"` — never `process.env`.
+Server schemas are merged in `env/server/index.ts`. Access via `import { env } from "@/env/server"` (or `"@/env/client"` in the browser) — never `process.env`.
 
 ## Project conventions
 

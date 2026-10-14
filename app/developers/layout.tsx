@@ -21,6 +21,8 @@ const navItems = [
   { href: "/developers/scopes", label: "Scopes" },
   { href: "/developers/m2m", label: "Machine to Machine" },
   { href: "/developers/resource-server", label: "Resource Server" },
+  { href: "/developers/better-auth", label: "Cliente Better Auth" },
+  { href: "/developers/troubleshooting", label: "Solución de problemas" },
 ];
 
 export default function DevelopersLayout({

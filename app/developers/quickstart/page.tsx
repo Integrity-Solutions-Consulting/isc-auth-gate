@@ -9,6 +9,10 @@ import {
 } from "lucide-react";
 import { getPublicAuthConfig } from "@/lib/runtime-config";
 
+const Code = ({ children }: { children: React.ReactNode }) => (
+  <code className="bg-muted rounded px-1 font-mono text-xs">{children}</code>
+);
+
 export default async function QuickstartPage() {
   const { baseUrl } = await getPublicAuthConfig();
 
@@ -25,26 +29,54 @@ export default async function QuickstartPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">1. Registra tu aplicación</h2>
         <p className="text-muted-foreground text-sm">
-          Solicita el registro de tu app con el equipo de administración o
-          desde el panel de administración. Necesitarás:
+          La registra un administrador del gate (o un owner/admin de tu
+          organización desde <em>Organizaciones → Apps</em>) en{" "}
+          <strong>Panel → Administración → OAuth Apps → Nuevo cliente</strong>.
+          El formulario tiene cuatro pasos:
         </p>
-        <ul className="text-muted-foreground list-inside list-disc text-sm">
-          <li>Un nombre y URL pública para tu aplicación</li>
-          <li>Una o más redirect URIs de callback (HTTPS)</li>
+        <ol className="text-muted-foreground list-inside list-decimal text-sm space-y-1">
           <li>
-            El método de autenticación:{" "}
-            <code className="bg-muted rounded px-1 font-mono text-xs">
-              client_secret_basic
-            </code>{" "}
-            (confidencial) o{" "}
-            <code className="bg-muted rounded px-1 font-mono text-xs">none</code>{" "}
-            (público, requiere PKCE)
+            <strong>Datos de la app</strong>: nombre, URL pública y logo.
           </li>
-        </ul>
+          <li>
+            <strong>Redirect URIs</strong> de callback (HTTPS en producción) y,
+            si haces logout en el gate, las <em>post-logout redirect URIs</em>.
+            Si tu app usa Better Auth, la redirect URI es{" "}
+            <Code>{"https://tu-app/api/auth/callback/<providerId>"}</Code>.
+          </li>
+          <li>
+            <strong>Configuración OAuth</strong>: scopes (separados por
+            espacio), método de autenticación (<Code>client_secret_basic</Code>{" "}
+            por defecto, <Code>client_secret_post</Code>, o <Code>none</Code>{" "}
+            para clientes públicos con PKCE), grant types (
+            <Code>authorization_code</Code> y <Code>refresh_token</Code> para
+            apps con usuario) y los <strong>resources</strong> (APIs) para los
+            que pedirá tokens.
+          </li>
+          <li>
+            <strong>Resumen</strong>: recibes el <strong>client_id</strong> y,
+            si es confidencial, el <strong>client_secret</strong>. El secret se
+            muestra una única vez: guárdalo de forma segura.
+          </li>
+        </ol>
         <p className="text-muted-foreground text-sm">
-          Recibirás un <strong>client_id</strong> y un{" "}
-          <strong>client_secret</strong> (solo para clientes confidenciales).
-          El secret se muestra una única vez: guárdalo de forma segura.
+          Si tu app llama a una API propia, regístrala como resource y
+          vincúlala al cliente (detalle del cliente → tarjeta
+          &quot;Resources&quot;). Revisa{" "}
+          <a
+            href="/developers/resource-server"
+            className="text-primary underline underline-offset-2"
+          >
+            Resource Server
+          </a>{" "}
+          y la regla de los allowedScopes en{" "}
+          <a
+            href="/developers/scopes"
+            className="text-primary underline underline-offset-2"
+          >
+            Scopes
+          </a>
+          .
         </p>
       </section>
 
@@ -72,6 +104,13 @@ export default async function QuickstartPage() {
           >
             Authorization Code + PKCE
           </a>
+          . Si tu app usa Better Auth, sigue{" "}
+          <a
+            href="/developers/better-auth"
+            className="text-primary underline underline-offset-2"
+          >
+            Cliente Better Auth
+          </a>
           .
         </p>
       </section>
@@ -81,8 +120,8 @@ export default async function QuickstartPage() {
         <AlertTitle className="capitalize">Requisitos de seguridad</AlertTitle>
         <AlertDescription>
           OAuth 2.1 exige PKCE para clientes públicos y transporte HTTPS en
-          producción. Los tokens de acceso se emiten como JWT firmados con
-          RS256 por el servidor.
+          producción. Los access tokens pedidos para un resource son JWT
+          firmados con EdDSA (Ed25519); sin resource son opacos.
         </AlertDescription>
       </Alert>
     </div>

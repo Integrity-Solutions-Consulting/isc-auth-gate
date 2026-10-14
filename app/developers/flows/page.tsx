@@ -28,7 +28,7 @@ export default async function FlowsPage() {
         <CodeBlock
           language="bash"
           code={`VERIFIER=$(openssl rand -base64 48 | tr -d '=+/')
-CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary | base64 | tr -d '=+/' | tr '+/' '-_')`}
+CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary | base64 | tr '+/' '-_' | tr -d '=')`}
         />
       </section>
 
@@ -40,9 +40,10 @@ CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary | base64 | tr
           language="bash"
           code={`CLIENT_ID="tu_client_id"
 REDIRECT_URI="https://miapp.com/callback"
-SCOPE="openid profile email"
+SCOPE="openid%20profile%20email%20offline_access"
+RESOURCE="https://api.miapp.com"   # opcional: identifier de tu API (RFC 8707)
 
-open "${issuer}/oauth2/authorize?client_id=${"$"}{CLIENT_ID}&redirect_uri=${"$"}{REDIRECT_URI}&response_type=code&scope=${"$"}{SCOPE}&state=un-estado-aleatorio&code_challenge=${"$"}{CHALLENGE}&code_challenge_method=S256"`}
+open "${issuer}/oauth2/authorize?client_id=${"$"}{CLIENT_ID}&redirect_uri=${"$"}{REDIRECT_URI}&response_type=code&scope=${"$"}{SCOPE}&state=un-estado-aleatorio&code_challenge=${"$"}{CHALLENGE}&code_challenge_method=S256&resource=${"$"}{RESOURCE}"`}
         />
         <p className="text-muted-foreground text-sm">
           El usuario inicia sesión (si no está logueado), revisa la pantalla de
@@ -54,6 +55,18 @@ open "${issuer}/oauth2/authorize?client_id=${"$"}{CLIENT_ID}&redirect_uri=${"$"}
           y el <code className="bg-muted rounded px-1 font-mono text-xs">state</code>{" "}
           que enviaste.
         </p>
+        <p className="text-muted-foreground text-sm">
+          Envía <code className="bg-muted rounded px-1 font-mono text-xs">resource</code>{" "}
+          si vas a llamar a una API propia: obtienes un access token JWT con{" "}
+          <code className="bg-muted rounded px-1 font-mono text-xs">aud</code> = tu
+          API. El cliente debe estar vinculado a ese resource (si no:{" "}
+          <code className="bg-muted rounded px-1 font-mono text-xs">invalid_target</code>
+          ) y el token solo llevará los scopes permitidos por el resource (ver{" "}
+          <a href="/developers/scopes" className="text-primary underline underline-offset-2">
+            Scopes
+          </a>
+          ).
+        </p>
         <CodeBlock
           language="text"
           code={`https://miapp.com/callback?code=abc123...&state=un-estado-aleatorio`}
@@ -64,7 +77,13 @@ open "${issuer}/oauth2/authorize?client_id=${"$"}{CLIENT_ID}&redirect_uri=${"$"}
         <h2 className="text-lg font-semibold">3. Canjea el código por tokens</h2>
         <p className="text-muted-foreground text-sm">
           Llama al token endpoint desde tu backend (nunca expongas el secret en
-          el cliente). Clientes públicos usan{" "}
+          el cliente). Con <code className="bg-muted rounded px-1 font-mono text-xs">-u</code>{" "}
+          se usa <code className="bg-muted rounded px-1 font-mono text-xs">client_secret_basic</code>;
+          si registraste <code className="bg-muted rounded px-1 font-mono text-xs">client_secret_post</code>,
+          envía <code className="bg-muted rounded px-1 font-mono text-xs">client_id</code> y{" "}
+          <code className="bg-muted rounded px-1 font-mono text-xs">client_secret</code> en el
+          cuerpo (si no coincide: <code className="bg-muted rounded px-1 font-mono text-xs">invalid_client</code>).
+          Clientes públicos usan{" "}
           <code className="bg-muted rounded px-1 font-mono text-xs">
             client_id
           </code>{" "}
@@ -80,12 +99,13 @@ curl -s -X POST "${issuer}/oauth2/token" \\
   -d "grant_type=authorization_code" \\
   -d "code=abc123..." \\
   -d "redirect_uri=${"$"}{REDIRECT_URI}" \\
-  -d "code_verifier=${"$"}{VERIFIER}" | jq .`}
+  -d "code_verifier=${"$"}{VERIFIER}" \\
+  -d "resource=${"$"}{RESOURCE}" | jq .   # el mismo resource del authorize`}
         />
         <p className="text-muted-foreground text-sm">
           La respuesta incluye{" "}
           <code className="bg-muted rounded px-1 font-mono text-xs">access_token</code>{" "}
-          (JWT), <code className="bg-muted rounded px-1 font-mono text-xs">refresh_token</code>{" "}
+          (JWT si enviaste resource; opaco si no), <code className="bg-muted rounded px-1 font-mono text-xs">refresh_token</code>{" "}
           (si solicitaste{" "}
           <code className="bg-muted rounded px-1 font-mono text-xs">
             offline_access
@@ -134,7 +154,8 @@ curl -s -X POST "${issuer}/oauth2/token" \\
   -H "Content-Type: application/x-www-form-urlencoded" \\
   -u "${"$"}{CLIENT_ID}:${"$"}{CLIENT_SECRET}" \\
   -d "grant_type=refresh_token" \\
-  -d "refresh_token=${"$"}{REFRESH_TOKEN}" | jq .`}
+  -d "refresh_token=${"$"}{REFRESH_TOKEN}" \\
+  -d "resource=${"$"}{RESOURCE}" | jq .   # repítelo para conservar el aud`}
         />
       </section>
 
@@ -150,6 +171,19 @@ curl -s -X POST "${issuer}/oauth2/token" \\
   -H "Content-Type: application/x-www-form-urlencoded" \\
   -u "${"$"}{CLIENT_ID}:${"$"}{CLIENT_SECRET}" \\
   -d "token=${"$"}{REFRESH_TOKEN}"`}
+        />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">7. Cierra la sesión en el gate</h2>
+        <p className="text-muted-foreground text-sm">
+          Logout iniciado por la app (OIDC RP-initiated logout). La URL de
+          retorno debe estar registrada como post-logout redirect URI del
+          cliente:
+        </p>
+        <CodeBlock
+          language="bash"
+          code={`open "${issuer}/oauth2/end-session?id_token_hint=${"$"}{ID_TOKEN}&post_logout_redirect_uri=https://miapp.com/&client_id=${"$"}{CLIENT_ID}"`}
         />
       </section>
 

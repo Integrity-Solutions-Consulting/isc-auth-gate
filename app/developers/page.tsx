@@ -43,8 +43,22 @@ const guides = [
     href: "/developers/resource-server",
     title: "Resource Server",
     description:
-      "Protege tus APIs verificando access tokens con jwks o introspect.",
+      "Registra tu API como resource y verifica los access tokens (JWKS o introspect).",
     icon: ShieldIcon,
+  },
+  {
+    href: "/developers/better-auth",
+    title: "Cliente Better Auth",
+    description:
+      "Receta probada con genericOAuth: login, refresh, logout y llamadas a tu API.",
+    icon: KeyRoundIcon,
+  },
+  {
+    href: "/developers/troubleshooting",
+    title: "Solución de problemas",
+    description:
+      "invalid_target, unable_to_get_user_info, invalid_client… causa y solución.",
+    icon: GlobeIcon,
   },
 ];
 

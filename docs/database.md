@@ -1,6 +1,6 @@
 # Database schema
 
-14 tables managed by Better Auth + plugins. Schema auto-generated via `bun run auth:generate` from `lib/auth.ts`.
+20 tables managed by Better Auth + plugins. Schema auto-generated via `bun run auth:generate` from the Better Auth server config (`lib/auth/server`).
 
 **Rules**:
 - Do **not** edit `database/schema.ts` manually — regenerate with `bun run auth:generate`
@@ -165,7 +165,9 @@ Registered 3rd-party OAuth client applications.
 | response_types | text[] | e.g. `code` |
 | scopes | text[] | Client-requested scopes |
 | require_pkce | boolean | PKCE enforcement |
-| public | boolean | Public (no secret) clients |
+| token_endpoint_auth_method | text | `none` (public), `client_secret_basic`, `client_secret_post`, `private_key_jwt` |
+| post_logout_redirect_uris | text[] | Allowed `end-session` redirects |
+| reference_id | text | Owning organization (active org at creation, via `clientReference`) |
 | metadata | jsonb | Arbitrary metadata |
 | user_id | text FK → users.id CASCADE | Owner |
 
@@ -220,6 +222,46 @@ User consent records per OAuth client.
 
 Indexed on `client_id`, `user_id`.
 
+### oauth_resources
+
+Protected APIs (RFC 8707 resource indicators). Source of truth for resources; `BETTER_AUTH_OAUTH_RESOURCES` only seeds it (insert-only). See [oauth-provider.md](./oauth-provider.md#resources-rfc-8707).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | text PK | |
+| identifier | text UNIQUE NOT NULL | Resource URI; becomes the token `aud` |
+| name | text NOT NULL | |
+| access_token_ttl / refresh_token_ttl | integer | Per-resource lifetimes (seconds) |
+| signing_algorithm / signing_key_id | text | |
+| allowed_scopes | text[] | Granted scopes = requested ∩ allowed (empty = no narrowing) |
+| custom_claims | jsonb | Static claims added to every token |
+| dpop_bound_access_tokens_required | boolean DEFAULT false | |
+| disabled | boolean DEFAULT false | |
+| policy_version | integer DEFAULT 1 | |
+| metadata | jsonb | |
+
+### oauth_client_resources
+
+Client ↔ resource links, required because `enforcePerClientResources` is on (default).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | text PK | |
+| client_id | text FK → oauth_clients.client_id CASCADE | |
+| resource_id | text FK → oauth_resources.identifier CASCADE | |
+| metadata | jsonb | |
+
+Unique on (`client_id`, `resource_id`).
+
+### oauth_client_assertions / device_codes
+
+- `oauth_client_assertions` — used `private_key_jwt` assertion ids (`id`, `expires_at`) for replay protection.
+- `device_codes` — RFC 8628 device grant state (`device_code`, `user_code`, `status`, `scope`, `resources`, `oauth_client_id`, polling fields).
+
+## Other plugin tables
+
+`passkeys` (passkey plugin), `two_factors` (twoFactor), `apikeys` (apiKey). See `database/schema.ts`.
+
 ## Relations diagram (logical)
 
 ```
@@ -232,6 +274,8 @@ users ──┬── sessions
          ├── oauth_refresh_tokens ─── oauth_clients ─── sessions
          └── oauth_consents ─── oauth_clients
 
+oauth_clients ─── oauth_client_resources ─── oauth_resources
+
 organizations ──┬── organization_roles
                 ├── members ─── users
                 └── invitations ─── users
@@ -240,7 +284,7 @@ organizations ──┬── organization_roles
 ## Migration workflow
 
 ```bash
-# Schema changed in lib/auth.ts (added/removed plugins)
+# Schema changed in lib/auth/server (added/removed plugins)
 bun run auth:generate    # regenerate database/schema.ts
 bun run database:generate  # create migration SQL in database/migrations/
 bun run database:up      # apply to database
