@@ -25,6 +25,10 @@ export const BetterAuthOAuthProviderServerConfig = oauthProvider({
     ]),
   ],
   cachedTrustedClients: new Set(env.BETTER_AUTH_OAUTH_TRUSTED_CLIENTS),
+  // Las apps verifican el access token localmente (JWKS), sin consultar al
+  // gate: su duración es lo que alguien sigue dentro tras revocarle el acceso.
+  // Por defecto es 1 h; al caducar, la app refresca y ahí el gate sí decide.
+  accessTokenExpiresIn: 60 * 15,
   resources: env.BETTER_AUTH_OAUTH_RESOURCES,
   clientReference: async ({ session }) => {
     const activeOrg = (

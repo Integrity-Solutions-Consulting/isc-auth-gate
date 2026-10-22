@@ -304,8 +304,10 @@ export const oauthRefreshTokens = pgTable(
     clientId: text("client_id")
       .notNull()
       .references(() => oauthClients.clientId, { onDelete: "cascade" }),
+    // cascade: al cerrar/borrar la sesión del gate (incluso con SQL directo)
+    // sus tokens OAuth dejan de valer y las apps vuelven a pedir login.
     sessionId: text("session_id").references(() => sessions.id, {
-      onDelete: "set null",
+      onDelete: "cascade",
     }),
     userId: text("user_id")
       .notNull()
@@ -342,8 +344,10 @@ export const oauthAccessTokens = pgTable(
     clientId: text("client_id")
       .notNull()
       .references(() => oauthClients.clientId, { onDelete: "cascade" }),
+    // cascade: al cerrar/borrar la sesión del gate (incluso con SQL directo)
+    // sus tokens OAuth dejan de valer y las apps vuelven a pedir login.
     sessionId: text("session_id").references(() => sessions.id, {
-      onDelete: "set null",
+      onDelete: "cascade",
     }),
     userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
     referenceId: text("reference_id"),
