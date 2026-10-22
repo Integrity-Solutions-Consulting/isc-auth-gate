@@ -3,7 +3,8 @@ import type { BetterAuthAdvancedOptions } from "better-auth/types";
 
 export const BetterAuthAdvancedServerConfig = {
   // Cookies `Secure` solo sobre https: el navegador las descarta en http (salvo localhost).
-  useSecureCookies: env.BETTER_AUTH_URL.startsWith("https://"),
+  // `?.`: en `next build` el env llega sin validar y puede faltar.
+  useSecureCookies: env.BETTER_AUTH_URL?.startsWith("https://") ?? false,
   disableCSRFCheck: false,
   disableOriginCheck: false,
   crossSubDomainCookies: {

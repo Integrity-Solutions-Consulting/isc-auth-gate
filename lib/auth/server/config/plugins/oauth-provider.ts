@@ -21,10 +21,11 @@ export const BetterAuthOAuthProviderServerConfig = oauthProvider({
       "profile",
       "email",
       "offline_access",
-      ...env.BETTER_AUTH_OAUTH_SCOPES,
+      // `?? []`: en `next build` t3-env no valida ni aplica los defaults.
+      ...(env.BETTER_AUTH_OAUTH_SCOPES ?? []),
     ]),
   ],
-  cachedTrustedClients: new Set(env.BETTER_AUTH_OAUTH_TRUSTED_CLIENTS),
+  cachedTrustedClients: new Set(env.BETTER_AUTH_OAUTH_TRUSTED_CLIENTS ?? []),
   // Las apps verifican el access token localmente (JWKS), sin consultar al
   // gate: su duración es lo que alguien sigue dentro tras revocarle el acceso.
   // Por defecto es 1 h; al caducar, la app refresca y ahí el gate sí decide.
