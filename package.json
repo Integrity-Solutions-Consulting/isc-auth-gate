@@ -15,7 +15,7 @@
     "dev:https": "bun --bun --inspect=6499 next dev -p 3000 --experimental-https --experimental-https-key $HOME/.local/share/isc-dev-certs/dev-key.pem --experimental-https-cert $HOME/.local/share/isc-dev-certs/dev.pem --experimental-https-ca $HOME/.local/share/isc-dev-certs/rootCA.pem",
     "dev:break": "bun --inspect-brk next dev -p 3000",
     "dev:debug": "bun --preload ./scripts/inspect-next-server.ts next dev --webpack -p 3000",
-    "build": "next build",
+    "build": "bun --bun next build",
     "start": "next start",
     "lint": "eslint",
     "test": "bun test --timeout=60000",

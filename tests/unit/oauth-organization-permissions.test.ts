@@ -9,6 +9,11 @@ import {
 describe("flattenAppPermissions", () => {
   test("solo emite recursos de apps (no los de gestión del gate)", () => {
     expect(flattenAppPermissions([orgOwner.statements])).toEqual([
+      "hr:access",
+      "hr:create",
+      "hr:delete",
+      "hr:read",
+      "hr:update",
       "todo:create",
       "todo:delete",
       "todo:read",
@@ -28,7 +33,7 @@ describe("flattenAppPermissions", () => {
   });
 
   test("admin de org tiene CRUD completo", () => {
-    expect(flattenAppPermissions([orgAdmin.statements])).toHaveLength(4);
+    expect(flattenAppPermissions([orgAdmin.statements])).toHaveLength(9);
   });
 
   test("sin statements → sin permisos", () => {

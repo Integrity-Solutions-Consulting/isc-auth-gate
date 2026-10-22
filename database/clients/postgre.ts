@@ -9,7 +9,7 @@ import { relations } from "../relations";
 // Sigue en https://github.com/almeidazs/better-drizzle/releases/tag/v0.3.0
 export const drizzlePostgreClient = drizzle({
   relations,
-  logger: env.BETTER_AUTH_DATABASE_DEBUG,
+  logger: String(env.BETTER_AUTH_DATABASE_DEBUG) === "true",
   connection: {
     max: 1,
     // La BD es remota: si la red corta la conexión (cambio de IP, NAT que
@@ -19,7 +19,10 @@ export const drizzlePostgreClient = drizzle({
     idleTimeout: 30,
     maxLifetime: 60 * 10,
     connectionTimeout: 10,
-    ssl: env.BETTER_AUTH_DATABASE_SSL,
+    // String(): en `next build` t3-env no valida (skipValidation) y llegan
+    // los strings crudos "false"/"true" — Bun SQL rechaza "false" como
+    // sslmode y drizzle toma cualquier string como logger. Igual en `logger`.
+    ssl: String(env.BETTER_AUTH_DATABASE_SSL) === "true",
     host: env.BETTER_AUTH_DATABASE_HOST,
     port: env.BETTER_AUTH_DATABASE_PORT,
     database: env.BETTER_AUTH_DATABASE_NAME,
