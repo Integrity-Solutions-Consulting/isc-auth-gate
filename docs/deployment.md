@@ -53,6 +53,23 @@ bun x dokploy application one --applicationId <id>
 Tests en CI corren contra un postgres efímero (service container) con
 `BETTER_AUTH_TEST_ALLOW_TRUNCATE=true` — nunca contra la db dev.
 
+## Previews por PR (Dokploy nativo)
+
+App `auth-gate-preview` (proyecto ISC AUTH, environment `preview`): source
+GitHub (App de Dokploy en la org), build `.containers/Containerfile`,
+`autoDeploy` desactivado (no despliega `main`, sólo sirve de base para los PRs).
+
+- Previews: wildcard `*.dokploy.integritysolutions.com.ec`, HTTPS Let's
+  Encrypt, límite 5, sólo PRs de colaboradores (el repo es público).
+- Preview env: el de dev, salvo `BETTER_AUTH_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL` y
+  `BETTER_AUTH_SERVER_TRUSTED_ORIGINS` (`https://${{DOKPLOY_DEPLOY_URL}}`), un
+  `BETTER_AUTH_SERVER_SECRET` propio y las `BETTER_AUTH_DATABASE_*` del
+  Postgres compartido `auth-gate-preview-db`.
+- Preview build args: `NEXT_PUBLIC_BETTER_AUTH_URL=https://${{DOKPLOY_DEPLOY_URL}}`
+  (Dokploy lo interpola también en build: verificado en el bundle).
+- `/api/health` responde `version: "local"` (no se pasa `APP_VERSION`).
+- Si cambia el env de dev, copiarlo a mano al preview env de esta app.
+
 ## Imagen
 
 `.containers/Containerfile` en el repo, multi-stage. Es el único archivo de
