@@ -33,8 +33,21 @@ Formato: **`<tipo>/<descripcion-en-kebab-case>`** (minúsculas, números, `.`, `
 | `ci` / `build` | workflows, Containerfile, dependencias de build |
 | `chore` | mantenimiento (deps, config) |
 
-El check `branch-name` del PR rechaza otro formato. Una rama mal nombrada no se
-renombra en el PR: crea una nueva y abre otro PR.
+Se valida en dos puntos:
+
+- **Al hacer push**: el ruleset `branch-names` rechaza crear en GitHub una rama
+  cuyo prefijo no esté en la tabla, sin excepciones para nadie. Verás
+  `GH013 … Cannot create ref due to creations being restricted`. Renómbrala en
+  local y vuelve a subirla:
+
+  ```bash
+  git branch -m feat/nombre-correcto
+  git push -u origin feat/nombre-correcto
+  ```
+
+- **En el PR**: el check `branch-name` exige además minúsculas y kebab-case
+  (`feat/Login` pasa el push pero no el check). Una rama mal nombrada no se
+  renombra en el PR: crea una nueva y abre otro PR.
 
 ## 2. Commits
 
