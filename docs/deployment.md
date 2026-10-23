@@ -8,7 +8,7 @@ en GitHub Actions, se publíca en GHCR y Dokploy solo despliega (provider
 
 | Workflow | Trigger | Acción |
 |---|---|---|
-| `.github/workflows/ci-deploy-dev.yaml` | push a `main` | CI (abajo) → build & push `ghcr.io/integrity-solutions-consulting/isc-auth-gate:dev` (+ `:sha`) → deploy app dev → health check |
+| `.github/workflows/ci-deploy-dev.yaml` | push a `main` | CI (abajo) → build arg `APP_VERSION=<sha>` en la app dev → Dokploy construye `main` desde GitHub y despliega → health check |
 | `.github/workflows/deploy-prod.yaml` | manual (`workflow_dispatch`, input `rollback_sha` vacío) | idem, con build args prod, tags `prod`/`prod-<sha>` |
 | `.github/workflows/deploy-prod.yaml` | manual, `rollback_sha=<sha completo>` | sin CI ni build: redespliega `:prod-<sha>` |
 
@@ -52,6 +52,26 @@ bun x dokploy application one --applicationId <id>
 
 Tests en CI corren contra un postgres efímero (service container) con
 `BETTER_AUTH_TEST_ALLOW_TRUNCATE=true` — nunca contra la db dev.
+
+## Previews por PR (Dokploy nativo)
+
+Activados en la app de dev, `auth-gate-dev` (proyecto ISC AUTH, environment
+develop). Por eso esa app tiene source GitHub (App de Dokploy en la org) y
+build `.containers/Containerfile`: Dokploy construye en el servidor tanto `main`
+como cada PR. `autoDeploy` está desactivado: `main` sólo lo despliega el
+workflow, después de pasar el CI.
+
+- Previews: wildcard `*.dokploy.integritysolutions.com.ec`, HTTPS Let's
+  Encrypt, límite 5, sólo PRs de colaboradores (el repo es público).
+- Preview env: el de dev, salvo `BETTER_AUTH_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL` y
+  `BETTER_AUTH_SERVER_TRUSTED_ORIGINS` (`https://${{DOKPLOY_DEPLOY_URL}}`), un
+  `BETTER_AUTH_SERVER_SECRET` propio y las `BETTER_AUTH_DATABASE_*` del
+  Postgres compartido `auth-gate-preview-db` (en develop, separado del de dev).
+- Preview build args: `NEXT_PUBLIC_BETTER_AUTH_URL=https://${{DOKPLOY_DEPLOY_URL}}`
+  (Dokploy lo interpola también en build: verificado en el bundle).
+- `/api/health` responde `version: "local"` (no se pasa `APP_VERSION`).
+- El *preview env* es un campo aparte del env de la app: si cambia el env de
+  dev, copiarlo también ahí.
 
 ## Imagen
 
