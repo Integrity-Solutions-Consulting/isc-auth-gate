@@ -11,8 +11,8 @@ import { betterAuthServer as auth } from "@/lib/auth/server";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cookies as NextCookies, headers as NextHeaders } from "next/headers";
 import { DashboardBreadcrumb } from "./dashboard-breadcrumb";
-import { isPublicDashboardRoute } from "@/lib/dashboard-routes";
 import { DashboardAccessDenied } from "@/components/dashboard-access-denied";
+import { isPublicDashboardRoute } from "@/proxy";
 
 /**
  * Layout principal del panel de administración (Server Component).

@@ -82,13 +82,14 @@ APP_VERSION=<commit sha>                                # /api/health.version
 servidor y no queda como variable de la imagen final.
 
 `next build` la compila dentro del bundle del **cliente**
-(`lib/auth/auth-client.ts` la usa como `baseURL`), así que no hay forma de
+(`lib/auth/client/config/client.ts` la usa como `baseURL`), así que no hay forma de
 moverla a runtime. Sin ella el bundle compila con `baseURL: undefined` y el
 login desde el navegador falla aunque el servidor esté sano.
 
 **No se pasan más build args.** Las vars de servidor no las necesita el build:
-`env/index.ts` devuelve un stub cuando no hay ninguna variable de la app
-presente, porque `lib/auth/auth.tsx` y compañía leen env en el scope del módulo
+`env/server` omite la validación durante `next build` (`skipValidation` con
+`NEXT_PHASE=phase-production-build`) y `lib/auth/server/config/server.ts` usa
+placeholders, porque `lib/auth/server` y compañía leen env en el scope del módulo
 y Next ejecuta esos módulos al recolectar datos de página. Un contenedor
 arrancado sin env completo lo detecta `entrypoint.ts` y aborta.
 

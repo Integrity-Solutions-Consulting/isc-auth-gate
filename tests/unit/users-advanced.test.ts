@@ -91,7 +91,7 @@ describe("User Auth Advanced", () => {
       await testHelpers.deleteUser(user.id);
 
       const users = await testDb.query.users.findMany({
-        where: (users, { eq }) => eq(users.id, user.id),
+        where: { id: user.id },
       });
 
       expect(users).toHaveLength(0);

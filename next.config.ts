@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
   // del servidor para /api/health. No es secreto. El health check post-deploy
   // de los workflows exige que coincida con el SHA desplegado.
   env: { APP_VERSION: process.env.APP_VERSION ?? "local" },
+  // Solo hostname (sin esquema ni puerto); localhost ya está permitido
+  allowedDevOrigins: ["192.168.100.227"],
   // Add the packages in transpilePackages
   transpilePackages: ["@t3-oss/env-nextjs", "@t3-oss/env-core"],
   rewrites: async () => {

@@ -46,3 +46,4 @@ next-env.d.ts
 
 # Copia del .env para probar `next build` sin variables (como en docker build).
 -env
+app.db

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { OAuthRequestExpired } from "@/components/oauth-request-expired";
+import { isInvalidSignature, isOAuthFlow } from "@/lib/oauth-flow";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
@@ -18,6 +20,7 @@ export default function EmailOtpPage() {
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
   const [loading, setLoading] = useState(false);
+  const [expired, setExpired] = useState(false);
 
   async function send() {
     if (!email) return toast.error("Ingresa tu correo");
@@ -37,9 +40,12 @@ export default function EmailOtpPage() {
     setLoading(true);
     const { error } = await authClient.signIn.emailOtp({ email, otp });
     setLoading(false);
+    if (isInvalidSignature(error)) return setExpired(true);
     if (error) return toast.error(error.message);
     toast.success("Sesión iniciada");
-    router.push("/dashboard");
+    // En un flujo OAuth el servidor responde con la URL de vuelta a la app y
+    // el cliente de Better Auth ya navega a ella
+    if (!isOAuthFlow(window.location.search)) router.push("/dashboard");
   }
 
   return (
@@ -63,6 +69,7 @@ export default function EmailOtpPage() {
           </div>
           <div className="flex flex-1 items-center justify-center">
             <div className="w-full max-w-xs space-y-4">
+              {expired && <OAuthRequestExpired />}
               <div className="space-y-1">
                 <h1 className="text-xl font-semibold">Acceso sin contraseña</h1>
                 <p className="text-sm text-muted-foreground">
@@ -104,7 +111,15 @@ export default function EmailOtpPage() {
                   </Button>
                 </>
               )}
-              <a href="/auth/sign-in" className="block text-center text-sm text-muted-foreground hover:underline">
+              <a
+                href="/auth/sign-in"
+                // Conserva la query firmada del flujo OAuth al volver al login
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.assign(`/auth/sign-in${window.location.search}`);
+                }}
+                className="block text-center text-sm text-muted-foreground hover:underline"
+              >
                 Volver al inicio de sesión
               </a>
             </div>

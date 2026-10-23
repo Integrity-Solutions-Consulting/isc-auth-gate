@@ -1,5 +1,5 @@
 import { betterAuthServer as auth } from "@/lib/auth/server";
-import { db } from "@/database";
+import { drizzlePostgreClient as db } from "@/database/clients/postgre";
 import { oauthConsents } from "@/database/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";

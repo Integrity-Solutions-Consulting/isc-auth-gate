@@ -1,6 +1,7 @@
 import { OAuthResourceInput } from "@better-auth/oauth-provider";
 import { BetterFetchError } from "better-auth/client";
 import useSWRMutation from "swr/mutation";
+import { resourcesKey } from "./list-resources-query";
 
 export interface UpdateResourceArg {
   identifier: string;
@@ -11,7 +12,7 @@ const key = "PATCH /admin/resources/:identifier";
 
 const fetcher = async (_key: string, { arg }: { arg: UpdateResourceArg }) => {
   const res = await fetch(
-    `/admin/resources/${encodeURIComponent(arg.identifier)}`,
+    `${resourcesKey}/${encodeURIComponent(arg.identifier)}`,
     {
       method: "PATCH",
       headers: { "content-type": "application/json" },

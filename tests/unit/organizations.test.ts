@@ -139,7 +139,7 @@ describe("Organization Management", () => {
       await testHelpers.deleteOrganization(org.id);
 
       const orgs = await testDb.query.organizations.findMany({
-        where: (organizations, { eq }) => eq(organizations.id, org.id),
+        where: { id: org.id },
       });
 
       expect(orgs).toHaveLength(0);
@@ -167,7 +167,7 @@ describe("Organization Management", () => {
       await testHelpers.deleteOrganization(org.id);
 
       const memberRecords = await testDb.query.members.findMany({
-        where: (members, { eq }) => eq(members.organizationId, org.id),
+        where: { organizationId: org.id },
       });
 
       expect(memberRecords).toHaveLength(0);
@@ -197,7 +197,7 @@ describe("Organization Management", () => {
       await testHelpers.deleteUser(user.id);
 
       const memberRecords = await testDb.query.members.findMany({
-        where: (members, { eq }) => eq(members.userId, user.id),
+        where: { userId: user.id },
       });
 
       expect(memberRecords).toHaveLength(0);

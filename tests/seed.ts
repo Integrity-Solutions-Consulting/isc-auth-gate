@@ -12,7 +12,7 @@ const seedPool = new Pool({
   database: env.BETTER_AUTH_DATABASE_NAME,
 });
 
-const db = drizzle(seedPool, { schema });
+const db = drizzle({ client: seedPool });
 
 function randomNotionistAvatar(): string {
   const DICEBEAR_BASE_URL = "https://api.dicebear.com/9.x/notionists/svg";

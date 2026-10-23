@@ -50,7 +50,7 @@ Browser              Server              Microsoft
   │◄── set session cookie
 ```
 
-- Configured in `env/microsoft.schema.ts` → validated by Zod
+- Configured in `env/server/schemas/microsoft.schema.ts` → validated by Zod
 - Profile photo sync (configurable size: 48–648px)
 - `overrideUserInfoOnSignIn: true` — updates local user data from Microsoft each login
 - Tenant ID optional — `common` endpoint if omitted
@@ -73,23 +73,23 @@ Client App           Server (this)       Resource Owner
   │◄── protected resource
 ```
 
-**Configuration** (`lib/auth.ts`):
+**Configuration** (`lib/auth/server/config/plugins/oauth-provider.ts`):
 
 | Setting | Value |
 |---------|-------|
 | `loginPage` | `/auth/sign-in` |
 | `consentPage` | `/auth/consent` |
-| `allowDynamicClientRegistration` | `true` |
-| `scopes` | `openid`, `profile`, `email`, `offline_access` |
-| `cachedTrustedClients` | `isc-gate-dashboard` |
+| `allowDynamicClientRegistration` | `BETTER_AUTH_OAUTH_DYNAMIC_CLIENT_REGISTRATION` (default `false`) |
+| `scopes` | `openid`, `profile`, `email`, `offline_access` + `BETTER_AUTH_OAUTH_SCOPES` |
+| `cachedTrustedClients` | `BETTER_AUTH_OAUTH_TRUSTED_CLIENTS` (default `isc-gate-dashboard`) |
 
-**Admin UI**: `/dashboard/administration/oauth` — create/delete clients, rotate secrets, manage consents.
+**Admin UI**: `/dashboard/administration/oauth` — create/delete clients, rotate secrets, manage resources and consents.
 
-**Well-known endpoints**:
-- `/.well-known/openid-configuration`
-- `/.well-known/oauth-authorization-server`
+**Discovery** (under the issuer `${BETTER_AUTH_URL}/api/auth`; the root `/.well-known/openid-configuration` is 404):
+- `/api/auth/.well-known/openid-configuration`
+- `/.well-known/oauth-authorization-server/api/auth`
 
-Server to server: trusted client registration allows direct token exchange. OIDC scoped — add custom scopes per resource when needed.
+Tokens are signed with EdDSA (Ed25519). Resources (RFC 8707), custom scopes, privileges and troubleshooting: see [OAuth 2.1 / OIDC provider](./oauth-provider.md).
 
 ## Sessions
 
@@ -134,5 +134,5 @@ createAccessControl(statements)
 | `ac` | create, read, update, delete |
 | `oauth` | create, read, update, delete |
 
-Admin user ID hardcoded in `lib/auth.ts` (creator). Add more via admin panel at `/dashboard/administration/users`.
+Admins are users with `role: "admin"` (`adminUserIds` is empty in `lib/auth/server/config/plugins/admin.ts`). Manage them via the admin panel at `/dashboard/administration/users`.
 Dynamic org roles:` isc-auth-gate/app/dashboard/administration/roles` using `dynamicAccessControl`.

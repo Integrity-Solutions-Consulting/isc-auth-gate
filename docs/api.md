@@ -77,72 +77,73 @@ Helper `withOrgAdminAccess()` in `lib/admin-org-access.ts` ensures caller is org
 
 ## OAuth 2.1 Provider (inbound)
 
-Better Auth OAuth Provider plugin endpoints. Full reference: [OAuth Provider docs](https://www.better-auth.com/docs/plugins/oauth-provider).
+Better Auth OAuth Provider plugin endpoints (`lib/auth/server/config/plugins/oauth-provider.ts`). Issuer: `${BETTER_AUTH_URL}/api/auth`. Tokens signed with EdDSA (Ed25519). Operator guide: [OAuth 2.1 / OIDC provider](./oauth-provider.md). Upstream reference: [OAuth Provider docs](https://www.better-auth.com/docs/plugins/oauth-provider).
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/.well-known/openid-configuration` | OIDC discovery |
-| GET | `/.well-known/oauth-authorization-server` | OAuth metadata |
+| GET | `/api/auth/.well-known/openid-configuration` | OIDC discovery (root `/.well-known/openid-configuration` is 404) |
+| GET | `/.well-known/oauth-authorization-server/api/auth` | OAuth AS metadata (RFC 8414) |
+| GET | `/api/auth/jwks` | JWKS (`/api/auth/oauth2/jwks` is 404) |
 | GET | `/api/auth/oauth2/authorize` | Authorization endpoint |
-| POST | `/api/auth/oauth2/token` | Token endpoint |
+| POST | `/api/auth/oauth2/token` | Token endpoint (also device-code grant) |
 | GET | `/api/auth/oauth2/userinfo` | Userinfo endpoint |
-| POST | `/api/auth/oauth2/register` | Dynamic client registration |
-| GET | `/api/auth/oauth2/jwks` | JWKS endpoint |
-| GET | `/api/auth/oauth2/consent` | Get user's consents |
-| POST | `/api/auth/oauth2/consent` | Record consent |
-| DELETE | `/api/auth/oauth2/consent` | Revoke consent |
+| POST | `/api/auth/oauth2/introspect` | Token introspection (RFC 7662) |
+| POST | `/api/auth/oauth2/revoke` | Token revocation (RFC 7009) |
+| GET | `/api/auth/oauth2/end-session` | RP-initiated logout |
+| POST | `/api/auth/oauth2/register` | Dynamic client registration (only if `BETTER_AUTH_OAUTH_DYNAMIC_CLIENT_REGISTRATION=true`) |
+| POST | `/api/auth/device/code` | Device authorization request (RFC 8628); users approve at `/auth/device` |
+| POST | `/api/auth/oauth2/consent` | Submit consent decision (consent page) |
+| GET | `/api/auth/oauth2/get-consent` | Get one consent |
+| GET | `/api/auth/oauth2/get-consents` | List user's consents |
+| POST | `/api/auth/oauth2/update-consent` | Update consent scopes |
+| POST | `/api/auth/oauth2/delete-consent` | Revoke consent |
 
 ### OAuth client management
 
-Via `authClient.oauth2.*` (client-side, no server actions):
+Via `authClient.oauth2.*` (client-side, no server actions). Allowed for global admins and owners/admins of the active organization (`clientPrivileges`):
 
-| Method | Client call | Purpose |
-|--------|-------------|---------|
-| POST | `authClient.oauth2.listClients()` | List all clients |
-| POST | `authClient.oauth2.createClient()` | Register new client |
-| POST | `authClient.oauth2.updateClient()` | Update client metadata |
-| POST | `authClient.oauth2.deleteClient()` | Delete client |
-| POST | `authClient.oauth2.rotateClientSecret()` | Rotate client secret |
-| POST | `authClient.oauth2.listConsents()` | List user consents |
-| POST | `authClient.oauth2.revokeConsent()` | Revoke consent |
+| Method | Client call | Path | Purpose |
+|--------|-------------|------|---------|
+| GET | `authClient.oauth2.getClients()` | `/oauth2/get-clients` | List clients |
+| GET | `authClient.oauth2.getClient()` | `/oauth2/get-client` | Get one client |
+| GET | `authClient.oauth2.publicClient()` | `/oauth2/public-client` | Public client info (consent page) |
+| POST | `authClient.oauth2.createClient()` | `/oauth2/create-client` | Register new client |
+| POST | `authClient.oauth2.updateClient()` | `/oauth2/update-client` | Update client metadata |
+| POST | `authClient.oauth2.deleteClient()` | `/oauth2/delete-client` | Delete client |
+| POST | `authClient.oauth2.client.rotateSecret()` | `/oauth2/client/rotate-secret` | Rotate client secret |
+| GET | `authClient.oauth2.getConsents()` | `/oauth2/get-consents` | List user consents |
+| POST | `authClient.oauth2.deleteConsent()` | `/oauth2/delete-consent` | Revoke consent |
 
 Admin UI at `/dashboard/administration/oauth`.
 
-### Resource servers (RFC 8707)
+### Admin route handlers (`app/api/admin/**`)
 
-Protected APIs that validate the access tokens issued by this server. Each
-resource has an `identifier` (its URI) that travels in the token `aud` claim.
-Endpoints are `SERVER_ONLY` — they are **not** exposed on the client
-(`authClient.oauth2.*` has no resource methods). They are invoked
-server-side via `auth.api.admin*OAuthResource` and wrapped by the admin route
-handlers at `/api/admin/resources`.
+The plugin's resource admin endpoints are `SERVER_ONLY` (404 over HTTP; only `auth.api.*`), so the dashboard uses these Next.js routes. All require an `admin` session.
 
-| Method | Route handler | `auth.api` call | Purpose |
-|--------|---------------|-----------------|---------|
-| GET | `/api/admin/resources` | `adminListOAuthResources` | List resources |
-| POST | `/api/admin/resources` | `adminCreateOAuthResource` | Create resource |
-| PATCH | `/api/admin/resources/:identifier` | `adminUpdateOAuthResource` | Update resource |
-| DELETE | `/api/admin/resources/:identifier` | `adminDeleteOAuthResource` | Delete resource |
+| Method | Route | Purpose |
+|--------|-------|---------|
+| GET | `/api/admin/resources` | List resources (`adminListOAuthResources`) |
+| POST | `/api/admin/resources` | Create resource (`adminCreateOAuthResource`) |
+| PATCH | `/api/admin/resources/:identifier` | Update resource (`adminUpdateOAuthResource`) |
+| DELETE | `/api/admin/resources/:identifier` | Delete resource (`adminDeleteOAuthResource`) |
+| POST | `/api/admin/resources/:identifier/clients/:clientId` | Link client ↔ resource (`adminLinkClientResource`, idempotent) |
+| DELETE | `/api/admin/resources/:identifier/clients/:clientId` | Unlink (`adminUnlinkClientResource`, idempotent) |
+| GET | `/api/admin/clients/:clientId/resources` | Identifiers linked to a client (reads `oauth_client_resources`) |
+| PATCH | `/api/admin/clients/:clientId` | Enable/disable a client (`{ disabled: boolean }`; not exposed by `update-client`) |
+| GET | `/api/admin/oauth-clients` | `{ clients: [{ clientId, name }] }` for KPI filters |
+| GET, POST | `/api/admin/users/:userId/consents` | List / create a user's consents |
+| GET, PATCH, DELETE | `/api/admin/users/:userId/consents/:consentId` | Read / update scopes / delete a consent |
 
-All four require an `admin` session (`resourcePrivileges` / `clientPrivileges`
-hooks in `lib/auth/auth.tsx` return `user?.role === "admin"`). Unauthenticated
-requests get `401`; non-admin sessions get `403` at the route layer.
-
-Seeding: `BETTER_AUTH_OAUTH_RESOURCES` (env, JSON array) is an **insert-only
-seed** — it only inserts resources that don't already exist, so admin edits in
-the DB are never overwritten. Leave it `[]` to manage resources entirely via
-the UI/DB. See [Resource servers](./resource-server.md).
-
-Admin UI at `/dashboard/administration/oauth` → **Resources** tab.
+Resource routes return `401` without a session and `403` for non-admins; errors go through `app/api/admin/resources/helpers.ts` (`errorResponse` never leaks SQL). Seeding, linking, the `allowedScopes` intersection rule and troubleshooting: [OAuth 2.1 / OIDC provider](./oauth-provider.md).
 
 ## Two-Factor Authentication (RFC 6238 / OTP / backup)
 
-Enabled natively via the `twoFactor` plugin in `lib/auth/auth.tsx`. It applies
+Enabled natively via the `twoFactor` plugin in `lib/auth/server/config/plugins/two-factor.ts`. It applies
 **only to email/password accounts** — Microsoft OAuth users are not
 subject to 2FA (Better Auth limitation). All flows are framework-native;
 no custom 2FA logic was written.
 
-Configuration highlights (`lib/auth/auth.tsx`):
+Configuration highlights (`lib/auth/server/config/plugins/two-factor.ts`):
 
 - `issuer`: `BETTER_AUTH_SERVER_NAME`
 - `totpOptions`: TOTP authenticator apps
@@ -170,12 +171,12 @@ Configuration highlights (`lib/auth/auth.tsx`):
 `/two-factor/verify-totp` rotates the session cookie (the old session is
 deleted), so clients must persist the new session.
 
-`onTwoFactorRedirect` (in `lib/auth/auth-client.ts`) sends the browser to
-`/2fa` when a sign-in requires a second factor.
+When the sign-in response has `twoFactorRedirect: true`, the sign-in form
+(`app/auth/sign-in/sign-in-form.tsx`) sends the browser to `/auth/2fa`.
 
 ### UI
 
-- `/2fa` — second-factor challenge (TOTP / email OTP / backup code), with
+- `/auth/2fa` — second-factor challenge (TOTP / email OTP / backup code), with
   "trust this device" option.
 - `/dashboard/settings/security` — self-service: enable / disable / regenerate
   backup codes. Shows the TOTP secret as a QR (`react-qr-code`) and the raw

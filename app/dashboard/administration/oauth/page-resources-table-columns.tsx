@@ -2,15 +2,9 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { OAuthResource } from "@better-auth/oauth-provider";
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import { DeleteResourceDialog } from "./delete-resource-dialog";
 import { UpdateResourceDialog } from "./update-resource-dialog";
 
@@ -33,35 +27,31 @@ const StatusCell = ({ resource }: { resource: OAuthResource }) => (
   </div>
 );
 
+// ponytail: los diálogos van fuera de un DropdownMenu (como en la tabla de
+// clients). En Base UI el Menu.Item es un <div> — el trigger exige <button>
+// (nativeButton) — y al hacer click cierra el menú y desmonta el diálogo.
 const ActionsCell = ({ resource }: { resource: OAuthResource }) => (
   <div className="flex justify-end gap-1">
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon" className="size-8" />}
+    <UpdateResourceDialog resource={resource}>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        aria-label="Edit resource"
+        title="Edit resource"
       >
-        <MoreHorizontalIcon className="size-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <UpdateResourceDialog resource={resource}>
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="cursor-pointer"
-          >
-            <PencilIcon data-icon="inline-start" />
-            Edit
-          </DropdownMenuItem>
-        </UpdateResourceDialog>
-        <DeleteResourceDialog resource={resource}>
-          <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
-            className="cursor-pointer"
-          >
-            <Trash2Icon data-icon="inline-start" />
-            Delete
-          </DropdownMenuItem>
-        </DeleteResourceDialog>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        <PencilIcon />
+      </Button>
+    </UpdateResourceDialog>
+    <DeleteResourceDialog resource={resource}>
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        aria-label="Delete resource"
+        title="Delete resource"
+      >
+        <Trash2Icon />
+      </Button>
+    </DeleteResourceDialog>
   </div>
 );
 

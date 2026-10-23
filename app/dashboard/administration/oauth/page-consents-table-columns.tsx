@@ -16,11 +16,7 @@ export type ConsentRow = OAuthConsent & {
 const ScopesCell = ({ scopes }: { scopes: string[] }) => (
   <div className="flex flex-wrap gap-1">
     {scopes.map((scope) => (
-      <Badge
-        key={scope}
-        variant="secondary"
-        className="font-mono text-[10px]"
-      >
+      <Badge key={scope} variant="secondary" className="font-mono text-[10px]">
         {scope}
       </Badge>
     ))}
@@ -31,6 +27,7 @@ const ActionsCell = ({ consent }: { consent: OAuthConsent }) => (
   <div className="flex justify-end">
     <DeleteOauthConsentDialog consent={consent}>
       <Button
+        nativeButton={false}
         size="icon-sm"
         variant="ghost"
         aria-label="Revoke consent"

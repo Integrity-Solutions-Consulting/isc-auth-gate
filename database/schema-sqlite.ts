@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
   index,
   integer,
@@ -277,7 +276,7 @@ export const oauthRefreshTokens = sqliteTable(
     id: text("id").primaryKey(),
     token: text("token").notNull().unique(),
     clientId: text("client_id").notNull().references(() => oauthClients.clientId, { onDelete: "cascade" }),
-    sessionId: text("session_id").references(() => sessions.id, { onDelete: "set null" }),
+    sessionId: text("session_id").references(() => sessions.id, { onDelete: "cascade" }),
     userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     referenceId: text("reference_id"),
     authorizationCodeId: text("authorization_code_id"),
@@ -307,7 +306,7 @@ export const oauthAccessTokens = sqliteTable(
     id: text("id").primaryKey(),
     token: text("token").notNull().unique(),
     clientId: text("client_id").notNull().references(() => oauthClients.clientId, { onDelete: "cascade" }),
-    sessionId: text("session_id").references(() => sessions.id, { onDelete: "set null" }),
+    sessionId: text("session_id").references(() => sessions.id, { onDelete: "cascade" }),
     userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
     referenceId: text("reference_id"),
     authorizationCodeId: text("authorization_code_id"),
@@ -425,123 +424,3 @@ export const apikeys = sqliteTable(
     index("apikeys_organization_id_idx").on(table.organizationId),
   ],
 );
-
-// Relations — misma estructura que schema.ts (dialect-agnostic).
-export const usersRelations = relations(users, ({ many }) => ({
-  sessions: many(sessions),
-  accounts: many(accounts),
-  members: many(members),
-  invitations: many(invitations),
-  oauthClients: many(oauthClients),
-  oauthRefreshTokens: many(oauthRefreshTokens),
-  oauthAccessTokens: many(oauthAccessTokens),
-  oauthConsents: many(oauthConsents),
-  twoFactors: many(twoFactors),
-}));
-
-export const sessionsRelations = relations(sessions, ({ one, many }) => ({
-  user: one(users, { fields: [sessions.userId], references: [users.id] }),
-  oauthRefreshTokens: many(oauthRefreshTokens),
-  oauthAccessTokens: many(oauthAccessTokens),
-}));
-
-export const accountsRelations = relations(accounts, ({ one }) => ({
-  user: one(users, { fields: [accounts.userId], references: [users.id] }),
-}));
-
-export const organizationsRelations = relations(organizations, ({ many }) => ({
-  organizationRoles: many(organizationRoles),
-  members: many(members),
-  invitations: many(invitations),
-}));
-
-export const organizationRolesRelations = relations(organizationRoles, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [organizationRoles.organizationId],
-    references: [organizations.id],
-  }),
-}));
-
-export const membersRelations = relations(members, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [members.organizationId],
-    references: [organizations.id],
-  }),
-  user: one(users, { fields: [members.userId], references: [users.id] }),
-}));
-
-export const invitationsRelations = relations(invitations, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [invitations.organizationId],
-    references: [organizations.id],
-  }),
-  user: one(users, { fields: [invitations.inviterId], references: [users.id] }),
-}));
-
-export const oauthClientsRelations = relations(oauthClients, ({ one, many }) => ({
-  user: one(users, { fields: [oauthClients.userId], references: [users.id] }),
-  oauthClientResources: many(oauthClientResources),
-  oauthRefreshTokens: many(oauthRefreshTokens),
-  oauthAccessTokens: many(oauthAccessTokens),
-  oauthConsents: many(oauthConsents),
-}));
-
-export const oauthResourcesRelations = relations(oauthResources, ({ many }) => ({
-  oauthClientResources: many(oauthClientResources),
-}));
-
-export const oauthClientResourcesRelations = relations(oauthClientResources, ({ one }) => ({
-  oauthClient: one(oauthClients, {
-    fields: [oauthClientResources.clientId],
-    references: [oauthClients.clientId],
-  }),
-  oauthResource: one(oauthResources, {
-    fields: [oauthClientResources.resourceId],
-    references: [oauthResources.identifier],
-  }),
-}));
-
-export const oauthRefreshTokensRelations = relations(oauthRefreshTokens, ({ one, many }) => ({
-  oauthClient: one(oauthClients, {
-    fields: [oauthRefreshTokens.clientId],
-    references: [oauthClients.clientId],
-  }),
-  session: one(sessions, {
-    fields: [oauthRefreshTokens.sessionId],
-    references: [sessions.id],
-  }),
-  user: one(users, { fields: [oauthRefreshTokens.userId], references: [users.id] }),
-  oauthAccessTokens: many(oauthAccessTokens),
-}));
-
-export const oauthAccessTokensRelations = relations(oauthAccessTokens, ({ one }) => ({
-  oauthClient: one(oauthClients, {
-    fields: [oauthAccessTokens.clientId],
-    references: [oauthClients.clientId],
-  }),
-  session: one(sessions, {
-    fields: [oauthAccessTokens.sessionId],
-    references: [sessions.id],
-  }),
-  user: one(users, { fields: [oauthAccessTokens.userId], references: [users.id] }),
-  oauthRefreshToken: one(oauthRefreshTokens, {
-    fields: [oauthAccessTokens.refreshId],
-    references: [oauthRefreshTokens.id],
-  }),
-}));
-
-export const oauthConsentsRelations = relations(oauthConsents, ({ one }) => ({
-  oauthClient: one(oauthClients, {
-    fields: [oauthConsents.clientId],
-    references: [oauthClients.clientId],
-  }),
-  user: one(users, { fields: [oauthConsents.userId], references: [users.id] }),
-}));
-
-export const twoFactorsRelations = relations(twoFactors, ({ one }) => ({
-  user: one(users, { fields: [twoFactors.userId], references: [users.id] }),
-}));
-
-export const apikeysRelations = relations(apikeys, ({ one }) => ({
-  user: one(users, { fields: [apikeys.referenceId], references: [users.id] }),
-}));
