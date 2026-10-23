@@ -4,9 +4,7 @@ Usamos **GitHub Flow**: `main` siempre está desplegable y todo cambio entra por
 Pull Request. `main` está protegida — no se puede hacer push directo.
 
 ```
-rama tipo/descripcion ──► PR a main ──► checks ──► preview propio (auth-pr-N)
-                                            │
-                               1 aprobación ──► squash merge ──► preview borrado
+rama tipo/descripcion ──► PR a main ──► checks + 1 aprobación ──► squash merge
                                                                       │
           deploy DEV automático ◄─────────────────────────────────────┘
           deploy PROD manual (Actions → Deploy Prod) ──► aprobación del owner
@@ -84,21 +82,6 @@ bun run lint && bun run test && bun run build
 `bun run test` necesita `bun run email:server` (maildev en :1025) para los
 tests de SMTP.
 
-### Preview por PR
-
-Cada PR de este repo (no de forks) tiene su propia instancia en Dokploy, sin
-afectar a la de nadie más:
-
-- URL `https://auth-pr-<N>.dokploy.integritysolutions.com.ec`. El bot la
-  comenta en el PR y la actualiza en cada push, una vez que pasa `ci / checks`.
-- **Base de datos propia y vacía** (Postgres `auth-pr-<N>-db`): tus
-  migraciones sólo corren ahí. El primer usuario pasa por `/setup`.
-- Hereda el env de dev, salvo URL, DB y `BETTER_AUTH_SERVER_SECRET` (propio).
-- **Login con Microsoft no funciona** en previews: Entra ID exige registrar
-  cada redirect URI. Usa email/contraseña, magic link u OTP.
-- Al cerrar o mergear el PR se borran la app y su DB (los datos se pierden).
-- Logs: Dokploy → ISC AUTH → environment `preview` → `auth-pr-<N>`.
-
 ## 4. Base de datos
 
 - Cambia `database/schema.ts` y genera la migración: `bun run database:generate`.
@@ -121,7 +104,7 @@ afectar a la de nadie más:
 
 - Sólo **squash merge**. La rama se borra sola al mergear.
 - Merge a `main` → workflow **CI + Deploy Dev**: CI, imagen
-  `ghcr.io/yigsvnsla/isc-auth-gate:<sha>`, deploy en Dokploy y health check que
+  `ghcr.io/integrity-solutions-consulting/isc-auth-gate:<sha>`, deploy en Dokploy y health check que
   exige que responda ese SHA.
 - **Prod** es manual: *Actions → Deploy Prod → Run workflow* desde `main`. El
   job de deploy espera la aprobación del owner (environment `production`).
