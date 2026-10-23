@@ -82,6 +82,24 @@ bun run lint && bun run test && bun run build
 `bun run test` necesita `bun run email:server` (maildev en :1025) para los
 tests de SMTP.
 
+### Preview por PR
+
+Cada PR de un colaborador del repo tiene su propia instancia, gracias a los
+preview deployments nativos de Dokploy, activados en la app `auth-gate-dev`
+(environment develop):
+
+- Dokploy construye la rama del PR en el servidor y publica la URL
+  `https://preview-auth-gate-dev-<id>.dokploy.integritysolutions.com.ec`
+  (la comenta en el PR). Cada push redespliega.
+- **La base de datos es compartida** por todos los previews
+  (`auth-gate-preview-db`, en develop). Una migración de tu rama se aplica ahí y la ven
+  los demás previews: mantén las migraciones aditivas y avisa en el PR si
+  agregas una. Nunca toca dev ni prod.
+- **El login con Microsoft no funciona** en los previews, porque Entra ID
+  exige registrar cada redirect URI. Usa email/contraseña, magic link u OTP.
+- Al cerrar o mergear el PR, Dokploy borra el preview.
+- Hay un máximo de 5 previews a la vez.
+
 ## 4. Base de datos
 
 - Cambia `database/schema.ts` y genera la migración: `bun run database:generate`.
@@ -103,9 +121,8 @@ tests de SMTP.
 ## 6. Merge y deploy
 
 - Sólo **squash merge**. La rama se borra sola al mergear.
-- Merge a `main` → workflow **CI + Deploy Dev**: CI, imagen
-  `ghcr.io/integrity-solutions-consulting/isc-auth-gate:<sha>`, deploy en Dokploy y health check que
-  exige que responda ese SHA.
+- Merge a `main` → workflow **CI + Deploy Dev**: CI, Dokploy construye `main`
+  desde GitHub y health check que exige que responda ese SHA.
 - **Prod** es manual: *Actions → Deploy Prod → Run workflow* desde `main`. El
   job de deploy espera la aprobación del owner (environment `production`).
 - **Rollback de prod**: *Deploy Prod* con `rollback_sha` = SHA completo de un
