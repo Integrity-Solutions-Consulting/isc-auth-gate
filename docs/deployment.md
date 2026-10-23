@@ -159,3 +159,4 @@ en uno posterior), así la imagen anterior sigue funcionando con el schema nuevo
 Nunca `drizzle-kit drop` ni `push` contra prod; un schema malo se corrige con
 una migración nueva hacia adelante. Activar backups programados de la DB prod
 en Dokploy.
+
