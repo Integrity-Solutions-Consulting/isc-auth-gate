@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { db } from "@/database";
+import { drizzlePostgreClient as db } from "@/database/clients/postgre";
 import { members as member } from "@/database/schema";
 import { betterAuthServer as auth } from "@/lib/auth/server";
 import { eq, and } from "drizzle-orm";

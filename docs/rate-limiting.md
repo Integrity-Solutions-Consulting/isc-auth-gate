@@ -1,7 +1,7 @@
 # Rate limiting
 
 Better Auth incluye rate limiting nativo. Está **habilitado en todos los
-entornos** (`rateLimit.enabled: true` en `lib/auth/auth.tsx`).
+entornos** (`rateLimit.enabled: true` en `lib/auth/server/config/rate-limit.ts`).
 
 ## Backends
 
@@ -29,7 +29,7 @@ romper el auth.
 
 ## Límites por endpoint
 
-Definidos en `rateLimit.customRules` (`lib/auth/auth.tsx`), relajando las
+Definidos en `rateLimit.customRules` (`lib/auth/server/config/rate-limit.ts`), relajando las
 reglas built-in de Better Auth (que limitan `/sign-in` y `/sign-up` a 3/10s):
 
 - `/sign-in/*`: 10 req/min
@@ -38,6 +38,8 @@ reglas built-in de Better Auth (que limitan `/sign-in` y `/sign-up` a 3/10s):
 - `/forget-password`, `/reset-password`: 5 req/min
 
 El global por defecto es 50 req/min (ventana 60s) para el resto de endpoints.
+Los endpoints `/oauth2/*` tienen límites propios del plugin OAuth provider; ver
+[oauth-provider.md](./oauth-provider.md#rate-limits).
 
 ## Cómo funciona el storage Redis
 

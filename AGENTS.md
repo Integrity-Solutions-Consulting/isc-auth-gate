@@ -52,8 +52,9 @@ bun test tests/unit/auth-flow.test.ts
 - `lib/auth-client.ts` — Client auth instance with admin/organization plugins
 - `lib/permissions.ts` — RBAC: `admin`, `moderator`, `user` roles via `createAccessControl`
 - `database/schema.ts` — Drizzle schema (users, sessions, accounts, verifications, organizations, members, invitations)
+- `database/relations.ts` / `database/relations-sqlite.ts` — Relational Queries v2 (`defineRelations`), passed as `drizzle({ relations })`. Keep both in sync
 - `database/index.ts` — Production DB connection (reads from `env`)
-- `tests/database.ts` — Test DB connection (SQLite in-memory, `drizzle-kit/api` push del schema)
+- `tests/database.ts` — Test DB connection (SQLite in-memory, `drizzle-kit/payload/sqlite` `pushSchema` del schema)
 - `env/` — Zod-validated env vars: `server.schema.ts`, `database.schema.ts`, `microsoft.schema.ts` (optional), `smtp.schema.ts` (optional)
 - `lib/providers.ts` — single source of truth for "is Microsoft/SMTP actually configured"; used by both the auth config and the `/setup` status panel
 - `lib/setup.ts` + `app/setup/` — first-boot flow: `needsSetup()` gate, status panel and `completeSetup()` server action
@@ -73,10 +74,11 @@ bun test tests/unit/auth-flow.test.ts
 
 ## Gotchas
 
-- `database/schema.ts` is **generated** by `bun run auth:generate` — don't edit manually
+- `database/schema.ts` is **generated** by `bun run auth:generate` — don't edit manually. With drizzle 1.x the generator also appends `export const authRelations = defineRelationsPart(...)`: drop it after regenerating, relations live in `database/relations.ts`
+- drizzle-orm 1.x / Relational Queries v2: `db.query.x.findMany({ where: { id }, orderBy: { id: "asc" } })` (objects, not callbacks). The Better Auth adapter must be imported from `@better-auth/drizzle-adapter/relations-v2` **and** receive `schema` explicitly (`drizzle({ relations })` no longer exposes `db._.fullSchema` → "Schema not found")
 - Tests run on **SQLite in-memory** (`tests/database.ts` + `database/schema-sqlite.ts`); never import `@/database/schema` (PostgreSQL) inside `tests/` — mixed column mappers corrupt data (`{"openid"}` instead of `["openid"]`). `tests/seed.ts` is the exception: it targets a real PG DB on purpose
 - `bun run test` = `bun test --timeout=60000`. The 2 SMTP tests need `bun run email:server` running (maildev on :1025), otherwise they fail with `ECONNREFUSED`
-- `database:up` runs `drizzle-kit migrate`. Do **not** use `drizzle-kit up` — it only migrates the `out/` folder format, prints "Everything's fine" and never touches the DB
+- `database:up` runs `drizzle-kit migrate`. `drizzle-kit up` only converts the `out/` folder format (never touches the DB); it was already run for drizzle-kit 1.x: migrations are `database/migrations/<timestamp>_<name>/{migration.sql,snapshot.json}`. A `meta/_journal.json` makes the 1.x migrator throw. The first 1.x `migrate` on an existing DB upgrades `drizzle.__drizzle_migrations` in place (adds `name`/`applied_at`) without re-running migrations
 - Production DBs must be migrated, never `push`ed. A DB created with `database:push` has tables but no `drizzle.__drizzle_migrations` journal, so `migrate` fails with exit 1 and no error message. Baseline it first: `bun run database:generate --custom` (empty migration) + `bun run database:up`
 - `entrypoint.ts` waits for the DB with an event-driven `Bun.connect` (3s timeout per attempt, 20 attempts), takes `pg_advisory_lock` (safe with several replicas) and migrates with `drizzle-orm/bun-sql/migrator` — drizzle-kit is a devDependency and is not in the image. It exits 0 and the Containerfile does `exec bun server.js`; any non-zero exit means Next never starts. `Bun.connect` needs an explicit `socket` handler in Bun 1.4, and its promise only rejects on connection-refused — DNS failures only emit `error`, so the per-attempt `setTimeout` is what stops it hanging forever. Covered by `tests/unit/entrypoint.test.ts`
 - CI validates migrations on a fresh postgres 17 with `database:up` (never `push`) and fails if `schema.ts` has changes without a generated migration

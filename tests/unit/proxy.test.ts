@@ -85,11 +85,14 @@ describe("proxy", () => {
     expect(res.status).toBe(200);
   });
 
-  it("handles chunked cookie names", () => {
+  // Better Auth sólo trocea session_data (cookie cache), nunca session_token:
+  // un `session_token.0` suelto no es una sesión.
+  it("does NOT treat a chunk-suffixed session_token as a session", () => {
     const req = new NextRequest(new URL("http://localhost/dashboard"));
     req.cookies.set("__Secure-better-auth.session_token.0", "dummy");
     const res = proxy(req);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/dashboard/login");
   });
 
   it("does NOT redirect /auth/sign-in with stale cookie (prevents loop)", () => {

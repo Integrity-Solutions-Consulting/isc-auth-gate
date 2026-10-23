@@ -24,14 +24,18 @@ export const resourceFormSchema = z.object({
 
 export type ResourceFormData = z.input<typeof resourceFormSchema>;
 
+/** "a, b ,c" → ["a", "b", "c"] (el form edita allowedScopes como texto). */
+export const parseAllowedScopes = (value: string | undefined): string[] =>
+  (value ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 export const toResourceInput = (data: ResourceFormData): OAuthResourceInput => {
   const input: OAuthResourceInput = { identifier: data.identifier };
   if (data.name) input.name = data.name;
   if (data.allowedScopes) {
-    input.allowedScopes = data.allowedScopes
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    input.allowedScopes = parseAllowedScopes(data.allowedScopes);
   }
   if (data.accessTokenTtl) input.accessTokenTtl = Number(data.accessTokenTtl);
   if (data.refreshTokenTtl) input.refreshTokenTtl = Number(data.refreshTokenTtl);

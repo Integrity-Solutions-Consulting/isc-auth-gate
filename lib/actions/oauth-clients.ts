@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
-import { db } from "@/database";
+import { drizzlePostgreClient as db } from "@/database/clients/postgre";
 import { oauthClients, organizations, users } from "@/database/schema";
 import { betterAuthServer as auth } from "@/lib/auth/server";
 

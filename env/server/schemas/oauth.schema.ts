@@ -12,6 +12,16 @@ export const oAuthEnviroment = createEnv({
         typeof val === "string" ? val.split(",").map((s) => s.trim()) : val,
       z.array(z.string().min(1)).default(["isc-gate-dashboard"]),
     ),
+    // Scopes propios (p. ej. todo:read) que se suman a openid/profile/email/
+    // offline_access. create-client rechaza cualquier scope que no esté en la
+    // lista del plugin ("cannot request scope ..."). Separados por comas.
+    BETTER_AUTH_OAUTH_SCOPES: z.preprocess(
+      (val) =>
+        typeof val === "string"
+          ? val.split(",").map((s) => s.trim()).filter(Boolean)
+          : val,
+      z.array(z.string().regex(/^[\x21\x23-\x5B\x5D-\x7E]+$/)).default([]),
+    ),
     // Recursos protegidos (RFC 8707): JSON con { identifier, name?,
     // allowedScopes? }[]. Seed de bootstrap (insertOnly); la fuente de verdad
     // es la tabla oauth_resources, gestionada desde el dashboard admin.

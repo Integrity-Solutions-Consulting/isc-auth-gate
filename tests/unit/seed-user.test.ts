@@ -18,7 +18,7 @@ describe("Seed test user", () => {
 
   it("crea o reutiliza user@example.com con password 12345678", async () => {
     const existing = await testDb.query.users.findFirst({
-      where: (users, { eq }) => eq(users.email, TEST_EMAIL),
+      where: { email: TEST_EMAIL },
     });
 
     if (existing) {

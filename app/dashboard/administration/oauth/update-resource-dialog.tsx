@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { useUpdateResourceMutation } from "./update-resource-mutation";
 import { resourcesKey } from "./list-resources-query";
 import { useSWRConfig } from "swr";
+import { ResourceScopesWarning } from "./resource-scopes-warning";
 import {
   resourceFormSchema,
   ResourceFormData,
@@ -115,6 +116,15 @@ export const UpdateResourceDialog: FC<UpdateResourceDialogProps> = ({
                         id={field.name}
                         placeholder="user:read, user:write"
                         className="h-9"
+                      />
+                      <FieldDescription>
+                        Vacío = sin restricción. Si lo rellenas, los tokens
+                        sólo llevan estos scopes: incluye los OIDC (openid,
+                        profile, email…) si una app inicia sesión con él.
+                      </FieldDescription>
+                      <ResourceScopesWarning
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </Field>
                   )}

@@ -58,9 +58,11 @@ export const clientOAuthConfigSchema = z.object({
   scope: z
     .string()
     .trim()
+    // RFC 6749 §3.3: scope-token = 1*( %x21 / %x23-5B / %x5D-7E ) — ASCII
+    // visible salvo espacio, `"` y `\`. Admite `todo:read`, URIs, etc.
     .regex(
-      /^[a-zA-Z0-9._-]+(?: [a-zA-Z0-9._-]+)*$/,
-      "Scopes separados por espacios",
+      /^[\x21\x23-\x5B\x5D-\x7E]+(?: [\x21\x23-\x5B\x5D-\x7E]+)*$/,
+      'Scopes separados por un espacio (sin comillas ni "\\")',
     )
     .max(1024)
     .optional(),

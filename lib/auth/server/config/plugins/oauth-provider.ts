@@ -2,11 +2,12 @@ import type { BetterAuthPlugin } from "better-auth";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { env } from "@/env/server";
 import { members } from "@/database/schema";
+import { organizationClaims, organizationPostLogin } from "./oauth-organization";
 
 import { and, eq, inArray } from "drizzle-orm";
 // `db` (node-postgres), no el cliente Bun SQL: `next build` evalúa esto en
 // workers de Node, y aquel tiene una sola conexión (es para el entrypoint).
-import { db } from "@/database";
+import { drizzlePostgreClient } from "@/database/clients/postgre";
 
 export const BetterAuthOAuthProviderServerConfig = oauthProvider({
   loginPage: "/auth/sign-in",
@@ -14,8 +15,21 @@ export const BetterAuthOAuthProviderServerConfig = oauthProvider({
   allowDynamicClientRegistration:
     env.BETTER_AUTH_OAUTH_DYNAMIC_CLIENT_REGISTRATION,
   allowUnauthenticatedClientRegistration: false,
-  scopes: ["openid", "profile", "email", "offline_access"],
-  cachedTrustedClients: new Set(env.BETTER_AUTH_OAUTH_TRUSTED_CLIENTS),
+  scopes: [
+    ...new Set([
+      "openid",
+      "profile",
+      "email",
+      "offline_access",
+      // `?? []`: en `next build` t3-env no valida ni aplica los defaults.
+      ...(env.BETTER_AUTH_OAUTH_SCOPES ?? []),
+    ]),
+  ],
+  cachedTrustedClients: new Set(env.BETTER_AUTH_OAUTH_TRUSTED_CLIENTS ?? []),
+  // Las apps verifican el access token localmente (JWKS), sin consultar al
+  // gate: su duración es lo que alguien sigue dentro tras revocarle el acceso.
+  // Por defecto es 1 h; al caducar, la app refresca y ahí el gate sí decide.
+  accessTokenExpiresIn: 60 * 15,
   resources: env.BETTER_AUTH_OAUTH_RESOURCES,
   clientReference: async ({ session }) => {
     const activeOrg = (
@@ -30,7 +44,7 @@ export const BetterAuthOAuthProviderServerConfig = oauthProvider({
     const activeOrg = sessionRecord?.activeOrganizationId;
     const userId = sessionRecord?.userId;
     if (!activeOrg || !userId) return false;
-    const [memberRow] = await db
+    const [memberRow] = await drizzlePostgreClient
       .select({ id: members.id })
       .from(members)
       .where(
@@ -44,6 +58,10 @@ export const BetterAuthOAuthProviderServerConfig = oauthProvider({
     return Boolean(memberRow);
   },
   resourcePrivileges: async ({ user }) => user?.role === "admin",
+  // Roles/permisos por app desde la organización elegida al iniciar sesión
+  // (scope "organization"). Ver ./oauth-organization.ts.
+  postLogin: organizationPostLogin,
+  extensions: [organizationClaims],
   rateLimit: {
     token: { window: 60, max: 60 },
     authorize: { window: 60, max: 30 },

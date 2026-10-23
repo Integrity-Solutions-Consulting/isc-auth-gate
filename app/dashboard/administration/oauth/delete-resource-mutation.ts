@@ -1,10 +1,11 @@
 import { BetterFetchError } from "better-auth/client";
 import useSWRMutation from "swr/mutation";
+import { resourcesKey } from "./list-resources-query";
 
 const key = "DELETE /admin/resources/:identifier";
 
 const fetcher = async (_key: string, { arg }: { arg: { identifier: string } }) => {
-  const res = await fetch(`/admin/resources/${encodeURIComponent(arg.identifier)}`, {
+  const res = await fetch(`${resourcesKey}/${encodeURIComponent(arg.identifier)}`, {
     method: "DELETE",
   });
   const data = await res.json().catch(() => null);

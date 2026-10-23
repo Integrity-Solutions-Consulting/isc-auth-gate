@@ -2,33 +2,30 @@ import { redirect } from "next/navigation";
 import { CommandIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 // import { env } from "@/env/server";
-import { checkDatabase, needsSetup } from "@/lib/setup";
 import { SetupForm } from "./setup-form";
+import { checkFirstAdmin } from "@/database/scripts/check-first-admin";
+import { checkConnection } from "@/database/scripts/check-connection";
+import { cn } from "@/lib/utils";
 
-// Sin esto Next prerenderiza en build: needsSetup() falla contra el placeholder
-// de build, devuelve false y el redirect a /auth/sign-in queda horneado en el
-// HTML estático → loop con /auth/sign-in, que sí ve la DB real sin admin.
-export const dynamic = "force-dynamic";
 
-/**
- * Pantalla de setup inicial (primer arranque tras deploy).
- *
- * Solo accesible mientras NO exista ningún admin: después redirige a
- * /auth/sign-in. El formulario crea el primer admin + organización vía
- * server action (`actions.ts`), sin pasar por el flujo de email/SMTP.
- */
+//! TODO: Se tiene que hacer una refactorización de la página de setup para que no dependa de la verificación de Microsoft y SMTP, ya que estos son opcionales. Por ahora, se mantiene la verificación de la base de datos como requisito principal para el setup inicial.
+
 export default async function SetupPage() {
-  if (!(await needsSetup())) redirect("/auth/sign-in");
+  // const checkFirstAdminResult = await checkFirstAdmin();
 
-  const dbOk = await checkDatabase();
+  // console.log("checkFirstAdminResult", checkFirstAdminResult);
+
+  if (!(await checkFirstAdmin())) redirect("/auth/sign-in");
+
+  const databaseCheck = await checkConnection();
 
   // Microsoft y SMTP son opcionales (lib/providers.ts): "no configurado" no es
   // un fallo de salud, así que el panel muestra tres estados, no dos.
   const status = [
     {
       label: "Base de datos",
-      state: dbOk ? ("ok" as const) : ("error" as const),
-      detail: dbOk ? "Conectada" : "Sin respuesta",
+      state: databaseCheck ? ("ok" as const) : ("off" as const),
+      detail: databaseCheck ? "Conectada" : "Sin respuesta",
     },
     // {
     //   label: "Microsoft OAuth",
@@ -69,17 +66,14 @@ export default async function SetupPage() {
                 className="flex items-center justify-between gap-2"
               >
                 <span className="text-muted-foreground">{label}</span>
-                {/* <span
-                  className={
-                    state === "ok"
-                      ? "text-green-600 dark:text-green-400"
-                      : state === "off"
-                        ? "text-muted-foreground"
-                        : "text-destructive"
-                  }
+                <span
+                  className={cn({
+                    "text-green-600 dark:text-green-400": state === "ok",
+                    "text-muted-foreground": state === "off",
+                  })}
                 >
                   {state === "ok" ? "✓" : state === "off" ? "○" : "✗"} {detail}
-                </span> */}
+                </span>
               </div>
             ))}
             {/* {microsoftConfigured ? (
@@ -96,7 +90,7 @@ export default async function SetupPage() {
             )} */}
           </section>
 
-          <SetupForm dbOk={dbOk} />
+          <SetupForm dbOk={databaseCheck} />
         </div>
       </div>
     </main>

@@ -58,6 +58,8 @@ import { useAdminDisableClient } from "@/hooks/use-admin-disable-client";
 import { isTrustedClient } from "@/lib/oauth-trusted-clients";
 import { useSWRConfig } from "swr";
 import { OAuthClient } from "@better-auth/oauth-provider";
+import { ClientResourcesCard } from "../client-resources-card";
+import { ClientOrganizationsCard } from "../client-organizations-card";
 
 const CopyButton: React.FC<{ value: string }> = ({ value }) => {
   const [copy, isCopied] = useCopyToClipboard();
@@ -548,6 +550,12 @@ function ClientDetailForm({
           </div>
         </CardContent>
       </Card>
+
+      {/* RESOURCES (RFC 8707) */}
+      <ClientResourcesCard clientId={client.client_id} />
+
+      {/* ORGANIZACIONES (roles/permisos por app) */}
+      <ClientOrganizationsCard clientId={client.client_id} />
 
       {/* SETTINGS */}
       <Card>

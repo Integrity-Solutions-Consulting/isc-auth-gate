@@ -1,6 +1,6 @@
 // `db` (node-postgres), no el cliente Bun SQL: `next build` evalúa esto en
 // workers de Node, y aquel tiene una sola conexión (es para el entrypoint).
-import { db } from "@/database";
+import { drizzlePostgreClient } from "@/database/clients/postgre";
 import { users } from "@/database/schema";
 import { env } from "@/env/server";
 import { client as email } from "@/lib/email";
@@ -12,7 +12,7 @@ export const BetterAuthPhoneNumberServerConfig = phoneNumber({
   requireVerification: false,
   otpLength: 6,
   sendOTP: async ({ phoneNumber, code }) => {
-    const [userRow] = await db
+    const [userRow] = await drizzlePostgreClient
       .select({ email: users.email })
       .from(users)
       .where(eq(users.phoneNumber, phoneNumber))

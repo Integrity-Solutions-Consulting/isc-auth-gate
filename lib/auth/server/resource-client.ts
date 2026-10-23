@@ -27,9 +27,9 @@ import { betterAuthServer } from "@/lib/auth/server";
  *     const payload = await serverClient.verifyBearerToken(accessToken, {
  *       verifyOptions: {
  *         issuer: `${baseUrl}/api/auth`,
- *         audience: baseUrl,
+ *         audience: "https://api.tu-app.com", // identifier del resource (RFC 8707)
  *       },
- *       scopes: ["profile"],
+ *       requiredScopes: ["profile"],
  *     });
  *     return Response.json({ sub: payload.sub, scopes: payload.scope });
  *   } catch {
