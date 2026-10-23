@@ -1,0 +1,71 @@
+name: Preview Deploy
+
+# Despliega en Dokploy la imagen que PR CI construyó para el PR
+# (app + Postgres propios: auth-pr-<N>), y comenta la URL en el PR.
+#
+# workflow_run corre la definición de `main`, nunca la de la rama: por eso
+# puede usar el environment `preview` (restringido a main) con la API key de
+# Dokploy sin exponerla a código del PR. No se hace checkout del PR.
+on:
+  workflow_run:
+    workflows: [PR CI]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+  deployments: write
+
+concurrency:
+  group: preview-${{ github.event.workflow_run.pull_requests[0].number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.pull_requests[0].number
+    runs-on: ubuntu-latest
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+      DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+      PREVIEW_ENVIRONMENT_ID: ${{ vars.DOKPLOY_PREVIEW_ENVIRONMENT_ID }}
+      PREVIEW_TEMPLATE_APP_ID: ${{ vars.DOKPLOY_PREVIEW_TEMPLATE_APP_ID }}
+      PREVIEW_DOMAIN: ${{ vars.PREVIEW_DOMAIN }}
+      IMAGE: ghcr.io/${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # Checkout de main (default de workflow_run): sólo el script.
+      - uses: actions/checkout@v4
+
+      # El PR pudo cerrarse mientras corría el CI: no resucitar el preview.
+      - name: PR abierto
+        id: open
+        run: echo "open=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json state --jq '.state == "OPEN"')" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        id: deploy
+        if: steps.open.outputs.open == 'true'
+        run: .github/scripts/preview.sh deploy "$PR" "$SHA"
+
+      # always(): también avisa en el PR si el deploy falló.
+      - name: Comentar URL
+        if: always() && steps.open.outputs.open == 'true'
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+          OK: ${{ steps.deploy.outcome == 'success' }}
+        run: |
+          if [ "$OK" = true ]; then
+            body="🚀 **Preview** del commit \`${SHA:0:7}\`: $URL"$'\n\n'"DB propia y vacía (el primer usuario pasa por \`/setup\`). Se borra al cerrar el PR."
+          else
+            body="❌ **Preview** del commit \`${SHA:0:7}\` falló. Revisa el job y los logs de \`auth-pr-$PR\` en Dokploy."
+          fi
+          # Un solo comentario por PR: se edita en cada deploy.
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --create-if-none --body "$body"

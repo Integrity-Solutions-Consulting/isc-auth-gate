@@ -11,6 +11,30 @@ en GitHub Actions, se publíca en GHCR y Dokploy solo despliega (provider
 | `.github/workflows/ci-deploy-dev.yaml` | push a `main` | CI (abajo) → build & push `ghcr.io/yigsvnsla/isc-auth-gate:dev` (+ `:sha`) → deploy app dev → health check |
 | `.github/workflows/deploy-prod.yaml` | manual (`workflow_dispatch`, input `rollback_sha` vacío) | idem, con build args prod, tags `prod`/`prod-<sha>` |
 | `.github/workflows/deploy-prod.yaml` | manual, `rollback_sha=<sha completo>` | sin CI ni build: redespliega `:prod-<sha>` |
+| `.github/workflows/pr-ci.yaml` (job `preview-image`) | PR de este repo, tras `ci` | build & push `:pr-<N>-<sha>` con `NEXT_PUBLIC_BETTER_AUTH_URL` del preview |
+| `.github/workflows/preview-deploy.yaml` | `workflow_run` de PR CI exitoso | `.github/scripts/preview.sh deploy`: app + Postgres `auth-pr-<N>` en el environment `preview` de Dokploy, health check, comentario en el PR |
+| `.github/workflows/preview-cleanup.yaml` | PR cerrado/mergeado (`pull_request_target`) | `preview.sh destroy`: borra app y DB |
+
+### Previews
+
+Los previews nativos de Dokploy no sirven aquí: sólo funcionan con source
+GitHub (estas apps despliegan imágenes de GHCR) y comparten un env, o sea una
+DB, entre todos los PRs. Por eso los gestiona Actions vía API:
+
+- Aislamiento: cada PR tiene su app **y su Postgres**; una migración de una
+  rama no toca dev ni otros previews.
+- Env: copia el de la app de dev (`DOKPLOY_PREVIEW_TEMPLATE_APP_ID`) y
+  reemplaza URL, trusted origins, DB y `BETTER_AUTH_SERVER_SECRET` (se genera
+  una vez por preview y se conserva entre pushes).
+- Seguridad: la API key de Dokploy sólo la ven `workflow_run` y
+  `pull_request_target`, que corren la definición de `main` y no hacen
+  checkout del PR. El environment `preview` de GitHub sólo admite `main`.
+  El código del PR sí corre en el contenedor del preview con el env heredado
+  de dev (SMTP, Microsoft): no pongas ahí secretos de prod.
+- Config: environment `preview` (secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY`;
+  vars `DOKPLOY_PREVIEW_ENVIRONMENT_ID`, `DOKPLOY_PREVIEW_TEMPLATE_APP_ID`) y
+  variable de repo `PREVIEW_DOMAIN` (wildcard DNS `*.dokploy.integritysolutions.com.ec`).
+- Las imágenes `:pr-*` quedan en GHCR; límpialas de vez en cuando.
 
 CI (job `ci`, postgres 17 efímero): `lint` → `drizzle-kit check` (historial) →
 `drizzle-kit generate` + diff (schema.ts sin migración generada) →
