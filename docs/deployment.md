@@ -8,7 +8,7 @@ en GitHub Actions, se publíca en GHCR y Dokploy solo despliega (provider
 
 | Workflow | Trigger | Acción |
 |---|---|---|
-| `.github/workflows/ci-deploy-dev.yaml` | push a `main` | CI (abajo) → build & push `ghcr.io/yigsvnsla/isc-auth-gate:dev` (+ `:sha`) → deploy app dev → health check |
+| `.github/workflows/ci-deploy-dev.yaml` | push a `main` | CI (abajo) → build & push `ghcr.io/integrity-solutions-consulting/isc-auth-gate:dev` (+ `:sha`) → deploy app dev → health check |
 | `.github/workflows/deploy-prod.yaml` | manual (`workflow_dispatch`, input `rollback_sha` vacío) | idem, con build args prod, tags `prod`/`prod-<sha>` |
 | `.github/workflows/deploy-prod.yaml` | manual, `rollback_sha=<sha completo>` | sin CI ni build: redespliega `:prod-<sha>` |
 
@@ -28,7 +28,7 @@ Contract con Dokploy:
 
 ```bash
 bun x dokploy application save-docker-provider \
-  --applicationId <id> --dockerImage ghcr.io/yigsvnsla/isc-auth-gate:<tag>
+  --applicationId <id> --dockerImage ghcr.io/integrity-solutions-consulting/isc-auth-gate:<tag>
 bun x dokploy application deploy --applicationId <id>
 ```
 

@@ -104,7 +104,7 @@ tests de SMTP.
 
 - Sólo **squash merge**. La rama se borra sola al mergear.
 - Merge a `main` → workflow **CI + Deploy Dev**: CI, imagen
-  `ghcr.io/yigsvnsla/isc-auth-gate:<sha>`, deploy en Dokploy y health check que
+  `ghcr.io/integrity-solutions-consulting/isc-auth-gate:<sha>`, deploy en Dokploy y health check que
   exige que responda ese SHA.
 - **Prod** es manual: *Actions → Deploy Prod → Run workflow* desde `main`. El
   job de deploy espera la aprobación del owner (environment `production`).
